@@ -1,4 +1,4 @@
-# Pivot-arm-game
+# pivot arm game
 Smaller 2d game based on inverse kinematics, collition detection, pathfinding and adversial search
 -----------------------------------------------------------------------------------------------------
 A puzzle game about a robot arm that walks by gripping. Grab a hold, swing over, and your old base becomes the new hand. Reach the flag in as few moves as you can.
