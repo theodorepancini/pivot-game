@@ -11,48 +11,56 @@
 :root.devil{--bg:#140b0b;--fg:#f2e3e0;--mute:#7d5450;--wall:#3c1a18;--soft:#26130f;--crack:#8a4038;--accent:#ff4a2e;--shell:#e9dedb;--shelledge:#8a5a55;--ring:#1a0b0a;--devil:#ff4a2e;--trace:#3a1714;--shadow:rgba(0,0,0,.7);--hi:rgba(255,220,210,.07);--lo:rgba(0,0,0,.3);--wallhi:#5a2824;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
-body{margin:0;min-height:100vh;display:grid;place-items:center;color:var(--fg);font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;transition:background .4s,color .4s}
+body{margin:0;min-height:100vh;display:grid;place-items:center;color:var(--fg);font:17px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;transition:background .4s,color .4s}
 #bgfx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-main{width:min(94vw,860px);padding:24px 0;position:relative;z-index:1}
+main{width:100%;padding:24px 16px;position:relative;z-index:1;display:grid;grid-template-columns:1fr var(--bw,1000px) 1fr;column-gap:28px;align-items:start}
+main>header{grid-column:2;grid-row:1}
+#cv{grid-column:2;grid-row:2}
+#msg{grid-column:2;grid-row:3}
+main>footer{grid-column:2;grid-row:4}
+#keys{grid-column:1;grid-row:2;justify-self:end;width:min(250px,100%);text-align:right;height:0;overflow:visible}
+#theory{grid-column:3;grid-row:2;justify-self:start;max-width:360px;height:0;overflow:visible}   /* side columns hang beside the board without stretching its rows */
+/* not enough room beside the board: everything in one column, keys and theory underneath */
+main.stacked{grid-template-columns:var(--bw,1000px);justify-content:center}
+main.stacked>*,main.stacked #cv,main.stacked #msg,main.stacked #theory,main.stacked #select,main.stacked #keys{grid-column:1}
+main.stacked #keys{height:auto;grid-row:5;justify-self:stretch;width:auto;text-align:left;margin-top:14px}
+main.stacked #theory{height:auto;grid-row:6;max-width:none;margin-top:10px}
 header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:12px;flex-wrap:wrap}
-h1{font-size:15px;font-weight:600;margin:0;letter-spacing:.08em}
+h1{font-size:17px;font-weight:600;margin:0;letter-spacing:.08em}
 :root.devil h1{color:var(--devil)}
 .mute{color:var(--mute);font-weight:400}
 canvas#cv{display:block;max-width:100%;margin:0 auto;touch-action:none;cursor:crosshair}
 #msg{min-height:1.5em;margin-top:10px}
 #msg .stars{color:var(--star);letter-spacing:.1em}
 footer{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center}
-button{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--mute);border-radius:6px;padding:6px 10px;cursor:pointer}
+button{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--mute);border-radius:7px;padding:7px 12px;cursor:pointer}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button:disabled{opacity:.35;cursor:default}
 button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 :root.devil button.on{background:var(--devil);border-color:var(--devil);color:var(--bg)}
 #snd{display:inline-flex;align-items:center;padding:6px 8px}
-#snd svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#snd svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .spacer{flex:1}
-.below{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:16px;align-items:start}
-@media (max-width:700px){.below{grid-template-columns:1fr;gap:12px}}
-.help{color:var(--mute);font-size:13px}
-.help p{margin:0 0 6px}
-.help ol{margin:0 0 10px;padding-left:3ch}
-.help li{margin:0 0 4px;padding-left:.5ch}
-.help li::marker{color:var(--fg)}
-.help b{color:var(--fg);font-weight:400}
-details{font-size:13px}
+details{font-size:15px}
 summary{cursor:pointer;color:var(--fg)}
 details dl{margin:10px 0 0;color:var(--mute)}
 details dt{color:var(--fg);margin-top:8px}
 details dd{margin:2px 0 0}
-dialog{background:var(--bg);color:var(--fg);border:1px solid var(--mute);border-radius:8px;padding:18px 22px;width:min(92vw,520px);font-size:13px}
+dialog h2{font-size:15px;font-weight:600;margin:14px 0 8px}
+dialog dl{margin:0;color:var(--mute)}
+dialog dt{color:var(--fg);margin-top:10px}
+dialog dt:first-child{margin-top:0}
+dialog dd{margin:2px 0 0}
+dialog{background:var(--bg);color:var(--fg);border:1px solid var(--mute);border-radius:8px;padding:18px 22px;width:min(92vw,580px);font-size:15px}
 dialog::backdrop{background:rgba(0,0,0,.4)}
 dialog header{margin-bottom:10px}
 dialog ol{margin:0;padding-left:3ch;color:var(--mute)}
 dialog li{margin:0 0 6px;padding-left:.5ch}
 dialog li::marker{color:var(--fg)}
 dialog b{color:var(--fg);font-weight:400}
-#select{position:absolute;inset:0;background:var(--bg);display:none;padding-top:24px;overflow:auto}
+#select{grid-column:2;grid-row:1 / span 4;align-self:stretch;z-index:2;background:var(--bg);display:none;overflow:auto}
 #select.on{display:block}
-#select h2{font-size:13px;font-weight:600;letter-spacing:.08em;margin:22px 0 8px}
+#select h2{font-size:15px;font-weight:600;letter-spacing:.08em;margin:22px 0 8px}
 #select h2.devil{color:var(--devil)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
 .grid button{text-align:left;padding:10px}
@@ -82,37 +90,44 @@ dialog b{color:var(--fg);font-weight:400}
     <button id="reset">restart</button>
     <button id="snd" aria-label="Sound on" title="Sound on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/><path class="cross" d="M16 9l5 6M21 9l-5 6" style="display:none"/></svg></button>
   </footer>
-  <div class="below">
-  <div class="help">
-    <ol>
-      <li>Click a dot to grip it. The arm swings over and its old base becomes the new hand.</li>
-      <li>Click a block to pick it up, then click empty space to drop it. Press T to turn a plank.</li>
-      <li>Reach the flag in as few moves as you can. Par is the best solution plus a little slack.</li>
-    </ol>
-    <p>Z undo · R restart · H hint · T turn · M sound · ? help</p>
-  </div>
-  <details>
+  <details id="keys">
+    <summary>Shortcuts</summary>
+    <dl>
+      <dt>Z</dt><dd>Undo your last move.</dd>
+      <dt>R</dt><dd>Restart the level.</dd>
+      <dt>H</dt><dd>Show the next move. Caps you at two stars.</dd>
+      <dt>T</dt><dd>Turn the plank you're holding.</dd>
+      <dt>M</dt><dd>Sound on or off.</dd>
+    </dl>
+  </details>
+  <details id="theory">
     <summary>Theory behind the game</summary>
     <dl>
       <dt>Inverse kinematics</dt>
-      <dd>The arm has three joints but only needs to reach a point, so many poses work. The game tries hand angles, solves the other two joints with the law of cosines, drops poses that hit a wall, and keeps the pose closest to the current one.</dd>
+      <dd>Three joints, one target point. Try hand angles, solve the other two joints with the law of cosines, keep the closest pose that hits nothing.</dd>
       <dt>Collision detection</dt>
-      <dd>Each arm segment is sampled along its length and checked against the grid. Where two solid cells touch only at a corner, the gap between them counts as closed.</dd>
+      <dd>Points along each arm segment are checked against the grid. Corner-to-corner gaps count as closed.</dd>
       <dt>Breadth-first search</dt>
-      <dd>A state is where the arm stands, where every block is, what it holds and what has broken. BFS explores states in order of move count, so the first time it reaches the flag is a shortest solution. That gives par and hints.</dd>
+      <dd>States are explored in order of move count, so the first one at the flag is a shortest solution. That gives par and hints.</dd>
       <dt>Pruning</dt>
-      <dd>The search skips targets out of reach before building anything, and skips states it has already seen before running the expensive arm check. Each state it searches from gets a lookup grid of what is solid and what can be gripped.</dd>
+      <dd>Out-of-reach targets and already-seen states are skipped before the expensive arm check.</dd>
       <dt>Adversarial search</dt>
-      <dd>The devil tries every red stone and every block, solves the level again for each, and picks the one that makes your shortest path longest. If none does, it attacks the first thing your best route needs. This is one step of minimax.</dd>
+      <dd>The devil tries every move, re-solves the level for each, and picks the one that makes your best route longest. One step of minimax.</dd>
       <dt>Procedural generation</dt>
       <dd>Endless levels are generate and test: build a random layout, solve it, keep it only if the solution has the right length and its pieces matter. It runs in a Web Worker so the page stays responsive.</dd>
       <dt>Cellular simulation</dt>
       <dd>Pieces fall one cell at a time until something holds them. A piece resting on grease slides sideways instead.</dd>
     </dl>
   </details>
-  </div>
   <dialog id="helpbox" aria-labelledby="help-title">
     <header><h1 id="help-title">HELP</h1><form method="dialog"><button>close</button></form></header>
+    <h2>How to play</h2>
+    <ol>
+      <li>Click a dot to grip it. The arm swings over and its old base becomes the new hand.</li>
+      <li>Click a block to pick it up, then click empty space to drop it. Press T to turn a plank.</li>
+      <li>Reach the flag in as few moves as you can. Par is the best solution plus a little slack.</li>
+    </ol>
+    <h2>Pieces</h2>
     <ol>
       <li><b>Hatched</b> can't be gripped.</li>
       <li><b>Cracked</b> breaks after one use.</li>
@@ -134,6 +149,7 @@ const LINK = 1.5, REACH = 3 * LINK, SAMPLES = 72;
 
 // # wall  ~ slick  % cracked (breaks after one use)  X devil stone  p/q plate (needs a wall under it)  P/Q door
 // B block  G greasy block  == plank lying flat  | plank standing up (two cells)  * gem  S start  F flag
+// W a loose stone that looks like wall (the secret on the first level); W over W is one tall stone
 const LEVELS = [
   { name: 'step', map: [
     '~~~~~~~~~~~~~~~~',
@@ -203,6 +219,7 @@ function load(def) {
     else if (ch === 'B' || ch === 'G') { blocks.push(ch === 'G' ? { x, y, w: 1, h: 1, oil: true, id: id++ } : { x, y, w: 1, h: 1, id: id++ }); ch = '.'; }
     else if (ch === '*') { gems.push(i); ch = '.'; }
     else if (ch === '=') { if (!taken.has(i) && rows[y][x + 1] === '=') { blocks.push({ x, y, w: 2, h: 1, id: id++ }); taken.add(i + 1); } ch = '.'; }
+    else if (ch === 'W') { if (!taken.has(i)) { const tall = rows[y + 1] && rows[y + 1][x] === 'W'; blocks.push({ x, y, w: 1, h: tall ? 2 : 1, stone: true, id: id++ }); if (tall) taken.add(i + w); } ch = '.'; }
     else if (ch === '|') { if (!taken.has(i) && rows[y + 1] && rows[y + 1][x] === '|') { blocks.push({ x, y, w: 1, h: 2, id: id++ }); taken.add(i + w); } ch = '.'; }
     else if (ch === 'p' || ch === 'q') { if ('#~%X'.includes((rows[y + 1] || [])[x])) (plates[ch] = plates[ch] || []).push(i); else ch = '.'; }   // a plate must sit on a wall
     else if (ch === 'P' || ch === 'Q') (doors[ch] = doors[ch] || []).push(i);
@@ -392,6 +409,7 @@ function act(L, s, cell, cur, fresh) {
   if (isBase(s, x, y)) return { err: '' };
   const bl = blockAt(s, x, y);
   if (bl) {
+    if (bl.stone && fresh) return { err: 'secret' };   // the solver never lifts a loose stone, so par and hints don't give it away
     const t = { x: bl.x + bl.w / 2, y: bl.y + bl.h / 2 };
     if (fresh && far(t)) return FAR;
     const { x: _x, y: _y, ...held } = bl;
@@ -684,9 +702,13 @@ function intro() {
   say(opt ? [`Par ${par}.`, rule(), gemOpt ? `All gems: ${gemOpt} moves.` : ''].filter(Boolean).join(' ') : 'No solution found.');
 }
 
+const SIDE = 220, GAP = 28;   // narrowest side column worth showing, and the gap beside the board
 function resize() {
-  const dpr = window.devicePixelRatio || 1;
-  S = Math.max(12, Math.min(44, Math.floor(cv.parentElement.clientWidth / L.w)));
+  const dpr = window.devicePixelRatio || 1, avail = document.documentElement.clientWidth - 32;
+  const besides = Math.min(1000, avail - 2 * (SIDE + GAP)), stacked = besides < 780;   // below ~780px the buttons wrap: stack instead
+  S = Math.max(12, Math.min(52, Math.floor((stacked ? Math.min(1000, avail) : besides) / L.w)));
+  document.querySelector('main').classList.toggle('stacked', stacked);
+  document.querySelector('main').style.setProperty('--bw', S * L.w + 'px');
   cv.style.width = S * L.w + 'px'; cv.style.height = S * L.h + 'px';
   cv.width = S * L.w * dpr; cv.height = S * L.h * dpr;
   sizeBg();
@@ -747,11 +769,15 @@ function finish() {
     sfx.grip(); const [dx, dy] = gripDir(s); puff(tip.x + dx * .45, tip.y + dy * .45, 8, col.mute);
     for (const ci of s.broken) if (!before.broken.includes(ci)) { const [x, y] = cxy(L, ci); puff(x + .5, y + .5, 16, col.crack, 1, .5); sfx.crumble(); }
   } else if (p.kind === 'gem') { sfx.gem(); puff(tip.x, tip.y, 12, col.gem, 1); }
-  else if (p.kind === 'pick') { sfx.click(); disp.delete(s.hold.id); }
+  else if (p.kind === 'pick') {
+    sfx.click(); disp.delete(s.hold.id);
+    if (s.hold.stone && !secretFound) { secretFound = true; sfx.gem(); puff(tip.x, tip.y, 18, col.star, 1); }
+  }
   else if (p.kind === 'place') { sfx.click(); disp.set(before.hold.id, { x: p.cell.x, y: p.cell.y, v: 0, path: [] }); }
   if (p.kind === 'place' || p.kind === 'pick' || p.kind === 'walk') follow(() => act(L, before, p.cell, null));
   for (const c in L.doors) if (doorOpen(L, before, c) !== doorOpen(L, s, c)) sfx.door();
   goal = ang.slice();
+  if (p.kind === 'pick' && s.hold.stone) say('You found a secret. Not every wall is a wall.');
   if (s.base.x === L.flag.x && s.base.y === L.flag.y) { hud(); return win(); }
   hud();
   if (L.hasDevil) {   // the devil's turn, after the screen has caught up
@@ -977,7 +1003,7 @@ function draw(t) {
       }
   }
   animBlocks(dt);
-  for (const k of s.blocks) { const d = disp.get(k.id); piece(d.x + k.w / 2, d.y + k.h / 2, k.w, k.h, 0, k.oil); }
+  for (const k of s.blocks) { const d = disp.get(k.id); piece(d.x + k.w / 2, d.y + k.h / 2, k); }
   if (hover && !pending && !won) {
     const ok = hover.res.kind, { x, y } = hover.cell;
     ctx.strokeStyle = ok ? col.fg : col.mute; ctx.lineWidth = .05; ctx.setLineDash(ok ? [] : [.1, .1]);
@@ -987,7 +1013,7 @@ function draw(t) {
       const end = ok === 'place' && hover.res.next.blocks.find(k => k.id === s.hold.id);
       if (end && (end.x !== x || end.y !== y)) {   // it won't stay where you drop it: show where it ends up
         ctx.setLineDash([.06, .1]); ctx.beginPath(); ctx.moveTo(x + end.w / 2, y + end.h / 2); ctx.lineTo(end.x + end.w / 2, end.y + end.h / 2); ctx.stroke();
-        ctx.globalAlpha = .4; piece(end.x + end.w / 2, end.y + end.h / 2, end.w, end.h, 0, end.oil); ctx.globalAlpha = 1;
+        ctx.globalAlpha = .4; piece(end.x + end.w / 2, end.y + end.h / 2, end); ctx.globalAlpha = 1;
       }
     }
     else if (hover.res.err !== '') ctx.strokeRect(x + .08, y + .08, .84, .84);
@@ -1072,8 +1098,14 @@ function sceneryLayer(L, s) {
 const shadow = (blur, dy, c = col.shadow) => { const k = S * (window.devicePixelRatio || 1); ctx.shadowColor = c; ctx.shadowBlur = blur * k; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = dy * k; };
 const noShadow = () => { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; };
 
-function piece(cx, cy, w, h, rot, oil, held) {
+function piece(cx, cy, { w, h, oil, stone }, rot = 0, held = false) {
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
+  if (stone) {   // drawn exactly like the wall around it
+    if (held) shadow(.4, .3);
+    ctx.fillStyle = col.wall; ctx.fillRect(-w / 2, -h / 2, w, h); noShadow();
+    ctx.fillStyle = col.wallhi; ctx.fillRect(-w / 2, -h / 2, w, .07);
+    return ctx.restore();
+  }
   const x0 = -w / 2 + .07, y0 = -h / 2 + .07, iw = w - .14, ih = h - .14;
   shadow(held ? .4 : .12, held ? .3 : .06);   // a held piece floats higher
   ctx.fillStyle = oil ? col.oil : col.soft; ctx.fillRect(x0, y0, iw, ih); noShadow();
@@ -1117,7 +1149,7 @@ function drawArm(b, t, dt) {
   wrist += (0 - wrist) * Math.min(1, dt * 9);
   jaw += ((s.hold ? 0 : 1) - jaw) * Math.min(1, dt * 10);
   const hand = { x: p[2].x + (tip.x - p[2].x) * .78, y: p[2].y + (tip.y - p[2].y) * .78 };
-  if (s.hold) piece(tip.x, tip.y, s.hold.w, s.hold.h, wrist, s.hold.oil, true);
+  if (s.hold) piece(tip.x, tip.y, s.hold, wrist, true);
   ctx.save(); ctx.translate(hand.x, hand.y); ctx.rotate(a3 + wrist * .5);
   ctx.fillStyle = col.ring; ctx.fillRect(-.06, -.12, .06, .24);
   ctx.fillStyle = col.shelledge; ctx.fillRect(0, -.21, .17, .42);
@@ -1198,7 +1230,10 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors
 readColors();
 // open on the first built-in level, played as an endless one: it shows instantly, and the worker builds
 // the next level while you play, so "next" is ready when you win
-playDef({ ...LEVELS[0], random: 'normal' });
+// Easter egg: on this first level only, the wall in the middle is a loose stone you can lift.
+let secretFound = false;
+const secret = LEVELS[0].map.map((row, y) => y === 4 || y === 5 ? row.slice(0, 11) + 'W' + row.slice(12) : row);   // step's wall: column 11, rows 4-5
+playDef({ ...LEVELS[0], random: 'normal', map: secret });
 prefetch();
 requestAnimationFrame(frame);
 </script>
