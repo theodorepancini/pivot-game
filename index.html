@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pivot</title>
 <style>
-:root{--bg:#fafafa;--fg:#111;--mute:#9a9a9a;--wall:#2b2b2b;--soft:#e6e6e6;--crack:#5a5550;--accent:#e4572e;--p:#3d7fd6;--q:#a35ad6;--gem:#19a68f;--star:#e8a817;--shell:#f6f6f3;--shelledge:#8f8f8a;--ring:#2a2a2a;--devil:#c0392b;--oil:#d4ad3f;--trace:#c9c9c4;--shadow:rgba(0,0,0,.22);--hi:rgba(255,255,255,.55);--lo:rgba(0,0,0,.07);--wallhi:#4b4b4b}
-@media (prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mute:#666;--wall:#4a4a4a;--soft:#222;--crack:#7a736b;--shell:#ecece8;--shelledge:#8d8d88;--ring:#1b1b1b;--devil:#e0604f;--oil:#b8932e;--trace:#2c2c2c;--shadow:rgba(0,0,0,.65);--hi:rgba(255,255,255,.08);--lo:rgba(0,0,0,.3);--wallhi:#5f5f5f}}
+:root{--bg:#fafafa;--fg:#111;--mute:#9a9a9a;--wall:#2b2b2b;--soft:#e6e6e6;--crack:#5a5550;--accent:#e4572e;--p:#3d7fd6;--q:#a35ad6;--gem:#19a68f;--star:#e8a817;--shell:#f6f6f3;--shelledge:#8f8f8a;--ring:#2a2a2a;--devil:#c0392b;--oil:#d4ad3f;--trace:#c9c9c4;--shadow:rgba(0,0,0,.22);--hi:rgba(255,255,255,.55);--lo:rgba(0,0,0,.07);--wallhi:#4b4b4b;--key:#ecece8;--keyside:#a9a9a3;--keyhi:#fff;--keytext:#4d4d49;--keycut:rgba(255,255,255,.95);--keydark:rgba(0,0,0,.22);--keyon:#2b2b2b;--keyontext:#ecece8}
+@media (prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mute:#666;--wall:#4a4a4a;--soft:#222;--crack:#7a736b;--shell:#ecece8;--shelledge:#8d8d88;--ring:#1b1b1b;--devil:#e0604f;--oil:#b8932e;--trace:#2c2c2c;--shadow:rgba(0,0,0,.65);--hi:rgba(255,255,255,.08);--lo:rgba(0,0,0,.3);--wallhi:#5f5f5f;--key:#363636;--keyside:#202020;--keyhi:rgba(255,255,255,.16);--keytext:#c4c4c4;--keycut:rgba(255,255,255,.09);--keydark:rgba(0,0,0,.9);--keyon:#e4e4e0;--keyontext:#2b2b2b}}
 /* devil mode: always dark, tinted red */
-:root.devil{--bg:#140b0b;--fg:#f2e3e0;--mute:#7d5450;--wall:#3c1a18;--soft:#26130f;--crack:#8a4038;--accent:#ff4a2e;--shell:#e9dedb;--shelledge:#8a5a55;--ring:#1a0b0a;--devil:#ff4a2e;--trace:#3a1714;--shadow:rgba(0,0,0,.7);--hi:rgba(255,220,210,.07);--lo:rgba(0,0,0,.3);--wallhi:#5a2824;color-scheme:dark}
+:root.devil{--bg:#140b0b;--fg:#f2e3e0;--mute:#7d5450;--wall:#3c1a18;--soft:#26130f;--crack:#8a4038;--accent:#ff4a2e;--shell:#e9dedb;--shelledge:#8a5a55;--ring:#1a0b0a;--devil:#ff4a2e;--trace:#3a1714;--shadow:rgba(0,0,0,.7);--hi:rgba(255,220,210,.07);--lo:rgba(0,0,0,.3);--wallhi:#5a2824;--key:#3b1a17;--keyside:#250e0c;--keyhi:rgba(255,200,190,.14);--keytext:#dcbcb6;--keycut:rgba(255,200,190,.08);--keydark:rgba(0,0,0,.9);--keyon:#ff4a2e;--keyontext:#2a0b08;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
 body{margin:0;min-height:100vh;display:grid;place-items:center;color:var(--fg);font:17px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;transition:background .4s,color .4s}
@@ -33,12 +33,17 @@ canvas#cv{display:block;max-width:100%;margin:0 auto;touch-action:none;cursor:cr
 #msg{min-height:1.5em;margin-top:10px}
 #msg .stars{color:var(--star);letter-spacing:.1em}
 footer{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center}
-button{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--mute);border-radius:7px;padding:7px 12px;cursor:pointer}
+button{font:inherit;background:var(--key);color:var(--keytext);border:1px solid var(--keyside);border-radius:2px;padding:7px 12px;cursor:pointer;
+  text-shadow:0 -1px 0 var(--keydark),0 1px 0 var(--keycut);   /* lettering pressed into the key */
+  box-shadow:inset 0 1px 0 var(--keyhi),inset 0 -2px 0 rgba(0,0,0,.07),0 4px 0 var(--keyside),0 5px 0 rgba(0,0,0,.35),0 7px 9px rgba(0,0,0,.3);   /* top bevel, then the key's side */
+  transition:transform .06s,box-shadow .06s}
+button:hover:not(:disabled){filter:brightness(1.04)}
+button:active:not(:disabled),button.on{transform:translateY(3px);box-shadow:inset 0 2px 3px rgba(0,0,0,.28),0 1px 0 var(--keyside),0 1px 2px rgba(0,0,0,.2)}   /* pushed down */
+#snd svg{filter:drop-shadow(0 1px 0 var(--keycut)) drop-shadow(0 -1px 0 var(--keydark))}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button:disabled{opacity:.35;cursor:default}
-button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-:root.devil button.on{background:var(--devil);border-color:var(--devil);color:var(--bg)}
-#snd{display:inline-flex;align-items:center;padding:6px 8px}
+button.on{background:var(--keyon);color:var(--keyontext);text-shadow:0 1px 0 rgba(255,255,255,.22),0 -1px 0 rgba(0,0,0,.35)}
+#snd{display:inline-flex;align-items:center;padding:6px 8px;align-self:stretch}
 #snd svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .spacer{flex:1}
 details{font-size:15px}
@@ -135,7 +140,7 @@ dialog b{color:var(--fg);font-weight:400}
       <dt>Adversarial search</dt>
       <dd>The devil tries every move, re-solves the level for each, and picks the one that makes your best route longest. One step of minimax.</dd>
       <dt>Procedural generation</dt>
-      <dd>Endless levels are generate and test: build a random layout, solve it, keep it only if the solution has the right length and its pieces matter. It runs in a Web Worker so the page stays responsive.</dd>
+      <dd>Daily levels, and endless until you've played them all, are built offline: generate a layout, solve it, map every position you can reach, and count how many moves along the best route lead into a dead end. Only the hardest are kept. Devil levels are built live in a Web Worker.</dd>
       <dt>Cellular simulation</dt>
       <dd>Pieces fall one cell at a time until something holds them. A piece resting on grease slides sideways instead.</dd>
     </dl>
@@ -554,7 +559,7 @@ const starsFor = (moves, par, hinted) => Math.min(hinted ? 2 : 3, moves <= par ?
 // Random levels are generate-and-test: build a random layout, solve it, keep it only if the solution has the
 // right length and its pieces matter.
 function rng(seed) { return () => (seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff) / 0x7fffffff; }   // imul: plain * loses the low bits
-const RANGE = { normal: [10, 13], devil: [12, 16] };
+const RANGE = { normal: [10, 13], devil: [12, 16], hard: [11, 16] };   // hard: the offline pool (build-levels.js)
 function candidate(mode, r) {
   const W = 17 + Math.floor(r() * 5), H = 7 + Math.floor(r() * 2), F = H - 2;
   const g = Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) =>
@@ -565,7 +570,7 @@ function candidate(mode, r) {
   const k = 4 + Math.floor(r() * 5);
   for (let i = 0; i < k; i++) {
     const x = 3 + Math.floor(r() * (W - 6)), y = 1 + Math.floor(r() * (F - 1));
-    g[y][x] = r() < .8 ? (r() < .3 ? '%' : '#') : '~';   // some holds crumble after one use
+    g[y][x] = r() < .8 ? (r() < (mode === 'hard' ? .55 : .3) ? '%' : '#') : '~';   // the offline pool gets more holds that crumble   // some holds crumble after one use
     if (r() < .3 && x + 1 < W - 2) g[y][x + 1] = '#';
   }
   const rule = mode === 'devil' ? 'devil' : null;
@@ -574,7 +579,7 @@ function candidate(mode, r) {
   else if (roll < .65 && a > 3) { g[F][2] = 'B'; g[F][3] = 'B'; }
   else if (roll < .8 && a > 3) { g[F][2] = '='; g[F][3] = '='; }
   else if (roll < .9 && a > 3) { g[F][2] = 'G'; g[F][3] = 'B'; }
-  if (r() < .35 && a > 3 && g[F][2] !== '.') {   // a door near the flag, opened by a plate on the start side
+  if (r() < (mode === 'hard' ? .9 : .35) && a > 3 && g[F][2] !== '.') {   // a door near the flag, opened by a plate on the start side (the offline pool: doors make the most dead ends)
     const dx = W - 4;
     for (let y = 1; y <= F; y++) g[y][dx] = 'P';
     g[F][a - 1] = 'p';
@@ -618,6 +623,39 @@ function generate(mode, seed, budget = 20000) {
   return null;
 }
 /* END GEN */
+
+/* POOL */
+// built by build-levels.js on 2026-11-04: the hardest 27 of 102 levels (at least 3% dead ends)
+const POOL = [
+  {"opt":11,"traps":0.203,"onPar":0.257,"map":["~~~~~~~~~~~~~~~~~~~","~.................~","~.....%...........~","~..##.~...........~","~...#.............~","~SGB.~~~~~~~~~~~.F~","~#################~"]},
+  {"opt":11,"traps":0.175,"onPar":0.222,"map":["~~~~~~~~~~~~~~~~~~~~~","~........#.......P..~","~......%.........P..~","~............%...P..~","~...~........~...P..~","~..~............#P..~","~S==p~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.174,"onPar":0.246,"map":["~~~~~~~~~~~~~~~~~~~~~","~................P..~","~................P..~","~....~.%...~#....P..~","~..%.%#..........P..~","~S==p~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.204,"onPar":0.367,"map":["~~~~~~~~~~~~~~~~~~","~............%P..~","~....~.%......P..~","~....~#.......P..~","~...%%........P..~","~SBp~~~~~~~~~.P.F~","~################~"]},
+  {"opt":11,"traps":0.133,"onPar":0.227,"map":["~~~~~~~~~~~~~~~~~~~~~","~.......%%.......P..~","~..........##...#P..~","~.....~..........P..~","~..........##....P..~","~................P..~","~SBp~~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":12,"traps":0.13,"onPar":0.247,"map":["~~~~~~~~~~~~~~~~~~~~~","~..~.....%#..~#..P..~","~................P..~","~................P..~","~................P..~","~...........#....P..~","~S==p~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":13,"traps":0.122,"onPar":0.232,"map":["~~~~~~~~~~~~~~~~~~~~~","~................P..~","~.....##.........P..~","~................P..~","~................P..~","~.....~#.%......~P..~","~SBBp~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.123,"onPar":0.246,"map":["~~~~~~~~~~~~~~~~~","~........%...P..~","~..........~.P..~","~........~#..P..~","~........~...P..~","~............P..~","~S==p~~~~~~~.P.F~","~###############~"]},
+  {"opt":11,"traps":0.111,"onPar":0.264,"map":["~~~~~~~~~~~~~~~~~~~~~","~.......%...........~","~....#..............~","~...................~","~..#%...............~","~SB~~~~~~~~~~~~~~~.F~","~###################~"]},
+  {"opt":11,"traps":0.113,"onPar":0.268,"map":["~~~~~~~~~~~~~~~~~~","~............#...~","~.............%..~","~...%~...........~","~...........~....~","~................~","~SGB.~~~~~~~~~..F~","~################~"]},
+  {"opt":11,"traps":0.093,"onPar":0.256,"map":["~~~~~~~~~~~~~~~~~~~~~","~........%..........~","~...................~","~...........~.......~","~...................~","~.....~...~.........~","~SB.~~~~~~~~~~~~~~.F~","~###################~"]},
+  {"opt":11,"traps":0.074,"onPar":0.221,"map":["~~~~~~~~~~~~~~~~~~~~~","~...................~","~...................~","~..%......%......~..~","~............~..~...~","~S==~~~~~~~~~~~~...F~","~###################~"]},
+  {"opt":11,"traps":0.093,"onPar":0.278,"map":["~~~~~~~~~~~~~~~~~~","~........#....P..~","~.......~.....P..~","~....~....%...P..~","~.............P..~","~SB.p~~~~~~~~.P.F~","~################~"]},
+  {"opt":11,"traps":0.033,"onPar":0.167,"map":["~~~~~~~~~~~~~~~~~~~~~","~................P..~","~........##......P..~","~...%.....##~....P..~","~..#.............P..~","~SGBp~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.128,"onPar":0.359,"map":["~~~~~~~~~~~~~~~~~~~~~","~....~#.....%....P..~","~................P..~","~............%.~.P..~","~................P..~","~SGp~~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.066,"onPar":0.25,"map":["~~~~~~~~~~~~~~~~~~~~","~...............P#.~","~...............P..~","~...............P..~","~......%~~#.....P..~","~......%........P..~","~SBBp~~~~~~~~~~.P.F~","~##################~"]},
+  {"opt":11,"traps":0.088,"onPar":0.309,"map":["~~~~~~~~~~~~~~~~~~~~~","~.....~..~.......P..~","~.............~#.P..~","~................P..~","~................P..~","~.....%..%.......P..~","~SBBp~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":13,"traps":0.036,"onPar":0.205,"map":["~~~~~~~~~~~~~~~~~","~..##......#.P#.~","~............P..~","~...........~P..~","~.........#..P..~","~........%~%#P..~","~SG.p~~~~~~~.P.F~","~###############~"]},
+  {"opt":11,"traps":0.045,"onPar":0.227,"map":["~~~~~~~~~~~~~~~~~~~~~","~....~.......%#.....~","~..........#........~","~........~#.........~","~...~....%..........~","~...................~","~SB~~~~~~~~~~~~~~..F~","~###################~"]},
+  {"opt":12,"traps":0.059,"onPar":0.259,"map":["~~~~~~~~~~~~~~~~~~~~~","~................P..~","~..%.............P..~","~.....%.%........P..~","~.............~..P..~","~SBBp~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.07,"onPar":0.302,"map":["~~~~~~~~~~~~~~~~~~~~~","~....%#.......##.P..~","~...........%....P..~","~.........~......P..~","~................P..~","~.....~....~.....P..~","~SGp~~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.031,"onPar":0.231,"map":["~~~~~~~~~~~~~~~~~","~............P..~","~...........#P..~","~...~........P..~","~...~#.......P..~","~SGBp~~~~~~~.P.F~","~###############~"]},
+  {"opt":12,"traps":0.044,"onPar":0.294,"map":["~~~~~~~~~~~~~~~~~~~~~","~..........%.....P..~","~...%.......~....P..~","~.............~.~P..~","~..~..~..........P..~","~SBBp~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.032,"onPar":0.274,"map":["~~~~~~~~~~~~~~~~~~~~","~..............#...~","~.............#....~","~........%.........~","~.......%..........~","~...............~..~","~SB~~~~~~~~~~~~~~.F~","~##################~"]},
+  {"opt":11,"traps":0.048,"onPar":0.317,"map":["~~~~~~~~~~~~~~~~~~~~~","~.............~.....~","~............%#.....~","~...................~","~...~............%#.~","~..#................~","~SB.~~~~~~~~~~~~~..F~","~###################~"]},
+  {"opt":11,"traps":0.044,"onPar":0.311,"map":["~~~~~~~~~~~~~~~~~~~~~","~......#.....%...P..~","~................P..~","~................P..~","~...............%P..~","~...~............P..~","~SBp~~~~~~~~~~~~.P.F~","~###################~"]},
+  {"opt":11,"traps":0.063,"onPar":0.438,"map":["~~~~~~~~~~~~~~~~~~~~~","~...................~","~.......~...........~","~...................~","~...~.....%...%.....~","~SB~~~~~~~~~~~~~~..F~","~###################~"]},
+];
+/* END POOL */
 
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
@@ -742,7 +780,7 @@ function resize() {
   sizeBg();
 }
 function hud() {
-  $('lvl').textContent = random() ? (random() === 'devil' ? 'endless devil' : 'endless') : `${li + 1} · ${def.name}`;
+  $('lvl').textContent = random() ? (random() === 'devil' ? 'endless devil' : random() === 'daily' ? 'daily · ' + shortDate(def.daily) : 'endless') : `${li + 1} · ${def.name}`;
   for (const m of ['normal', 'devil']) $('m-' + m).classList.toggle('on', random() === m);
   $('open').classList.toggle('on', !random());
   $('moves').textContent = moves; $('par').textContent = par;
@@ -853,6 +891,7 @@ function finish() {
 function win() {
   won = true; hover = null; sfx.win();
   const stars = starsFor(moves, par, hinted), perfect = opt && moves <= opt && !hinted;
+  if (random() === 'daily') store.save('daily ' + def.daily, { stars, gems: 0, best: moves, perfect, gemRun: false });
   if (!random()) store.save(li, { stars, gems: s.gems.length, best: moves, perfect, gemRun: L.gems.length && s.gems.length === L.gems.length && gemOpt && moves <= gemOpt });
   const st = '★'.repeat(stars) + '☆'.repeat(3 - stars);
   const allG = L.gems.length && s.gems.length === L.gems.length;
@@ -862,7 +901,7 @@ function win() {
   say(`<span class="stars">${st}</span> ${parts2.join(' ')}`, true);
   $('next').hidden = !random() && li >= LEVELS.length - 1;
 }
-function next() { if (random()) playRandom(random()); else startLevel(li + 1); }
+function next() { if (random() === 'daily') playRandom('normal'); else if (random()) playRandom(random()); else startLevel(li + 1); }
 
 function undo() {
   if (pending || !hist.length) return;
@@ -915,11 +954,38 @@ if (worker) {
 // keep the buffers topped up, one level at a time: the mode you're waiting on first, then whichever has fewest ready
 function prefetch() {
   if (!worker || busy) return;
-  const mode = wanted || (ready.devil.length < ready.normal.length ? 'devil' : 'normal');
+  const mode = wanted || (freshPool().length || ready.devil.length < ready.normal.length ? 'devil' : 'normal');   // no need to build normal levels while hard ones are left
   if (ready[mode].length >= BUFFER) return;
   busy = true; worker.postMessage({ mode, seed: (Math.random() * 2 ** 31) | 0 });
 }
+// ---------- hard levels: built offline by build-levels.js; endless normal and the daily level play them ----------
+// endless plays each hard level once (remembered by its layout, so a rebuilt pool brings new ones), then generates live
+const layoutId = lv => lv.map.join('/');
+const seen = {
+  get() { try { return new Set(JSON.parse(localStorage.getItem('pivot.seen') || '[]')); } catch { return new Set(); } },
+  add(id) { try { localStorage.setItem('pivot.seen', JSON.stringify([...this.get(), id])); } catch {} },
+};
+const seenHere = new Set();   // in case storage is unavailable
+const freshPool = () => { const done = seen.get(); return POOL.filter(lv => !done.has(layoutId(lv)) && !seenHere.has(layoutId(lv))); };
+function fromPool() {
+  const fresh = freshPool();
+  if (!fresh.length) return null;
+  const lv = fresh[Math.floor(Math.random() * fresh.length)];
+  seen.add(layoutId(lv)); seenHere.add(layoutId(lv));
+  return { name: 'endless', random: 'normal', map: lv.map, opt: lv.opt };
+}
+// the same level for everyone on a given date: walk the pool in a fixed shuffled order, one level per day
+const shortDate = date => new Date(date + 'T12:00').toLocaleDateString('en', { month: 'short', day: 'numeric' });   // 2026-11-04 → Nov 4
+function today() { const d = new Date(); return [d.getFullYear(), d.getMonth() + 1, d.getDate()].map(n => String(n).padStart(2, '0')).join('-'); }
+function dailyDef(date = today()) {
+  const r = rng(20261104), order = POOL.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  const [y, m, d] = date.split('-').map(Number), lv = POOL[order[Math.floor(Date.UTC(y, m - 1, d) / 864e5) % POOL.length]];
+  return { name: 'daily', random: 'daily', daily: date, map: lv.map, opt: lv.opt };
+}
 function playRandom(mode) {
+  const hard = mode === 'normal' && fromPool();
+  if (hard) { playDef(hard); return prefetch(); }
   if (ready[mode].length) { playDef(ready[mode].shift()); prefetch(); return; }
   if (!worker) {   // no worker available: build it here (the page pauses briefly)
     say('Building a level...');
@@ -934,6 +1000,12 @@ function playRandom(mode) {
 function openSelect() {
   const rec = store.all(), g = $('grid');
   g.textContent = '';
+  if (POOL.length) {   // today's level first
+    const r = rec['daily ' + today()] || {}, b = document.createElement('button');
+    b.innerHTML = `daily · ${shortDate(today())}<small><span class="st">${'★'.repeat(r.stars || 0)}${'☆'.repeat(3 - (r.stars || 0))}</span>${r.best ? ` · best ${r.best}` : ''}${r.perfect ? ' · perfect' : ''}</small>`;
+    b.onclick = () => { $('select').classList.remove('on'); playDef(dailyDef()); };
+    g.appendChild(b);
+  }
   LEVELS.forEach((lv, i) => {
     const r = rec[i] || {}, b = document.createElement('button'), gems = load(lv).gems.length;
     b.disabled = !unlocked(i);
