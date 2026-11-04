@@ -12,7 +12,7 @@ Reach the flag under par.
 
 Hatched can't be gripped, cracked breaks after one use, greasy blocks can be carried but not climbed. A plate holds its door open while a block sits on it. In devil mode, the devil breaks a stone or greases a block after each of your moves.
 
-Z undo · R restart · H hint · ? help · M sound
+Z undo, R restart,  H hint, M sound
 
 Under the hood
 Inverse kinematics to find the 3-joint arm's pose.
