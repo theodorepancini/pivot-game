@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pivot</title>
+<style>
+:root{--bg:#fafafa;--fg:#111;--mute:#9a9a9a;--wall:#2b2b2b;--soft:#e6e6e6;--crack:#5a5550;--accent:#e4572e;--p:#3d7fd6;--q:#a35ad6;--gem:#19a68f;--star:#e8a817;--shell:#f6f6f3;--shelledge:#8f8f8a;--ring:#2a2a2a;--devil:#c0392b;--oil:#d4ad3f;--trace:#c9c9c4;--shadow:rgba(0,0,0,.22);--hi:rgba(255,255,255,.55);--lo:rgba(0,0,0,.07);--wallhi:#4b4b4b}
+@media (prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mute:#666;--wall:#4a4a4a;--soft:#222;--crack:#7a736b;--shell:#ecece8;--shelledge:#8d8d88;--ring:#1b1b1b;--devil:#e0604f;--oil:#b8932e;--trace:#2c2c2c;--shadow:rgba(0,0,0,.65);--hi:rgba(255,255,255,.08);--lo:rgba(0,0,0,.3);--wallhi:#5f5f5f}}
+/* devil mode: always dark, tinted red */
+:root.devil{--bg:#140b0b;--fg:#f2e3e0;--mute:#7d5450;--wall:#3c1a18;--soft:#26130f;--crack:#8a4038;--accent:#ff4a2e;--shell:#e9dedb;--shelledge:#8a5a55;--ring:#1a0b0a;--devil:#ff4a2e;--trace:#3a1714;--shadow:rgba(0,0,0,.7);--hi:rgba(255,220,210,.07);--lo:rgba(0,0,0,.3);--wallhi:#5a2824;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;min-height:100vh;display:grid;place-items:center;color:var(--fg);font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;transition:background .4s,color .4s}
+#bgfx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+main{width:min(94vw,860px);padding:24px 0;position:relative;z-index:1}
+header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+h1{font-size:15px;font-weight:600;margin:0;letter-spacing:.08em}
+:root.devil h1{color:var(--devil)}
+.mute{color:var(--mute);font-weight:400}
+canvas#cv{display:block;max-width:100%;margin:0 auto;touch-action:none;cursor:crosshair}
+#msg{min-height:1.5em;margin-top:10px}
+#msg .stars{color:var(--star);letter-spacing:.1em}
+footer{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--mute);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.35;cursor:default}
+button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+:root.devil button.on{background:var(--devil);border-color:var(--devil);color:var(--bg)}
+#snd{display:inline-flex;align-items:center;padding:6px 8px}
+#snd svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.spacer{flex:1}
+.below{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:16px;align-items:start}
+@media (max-width:700px){.below{grid-template-columns:1fr;gap:12px}}
+.help{color:var(--mute);font-size:13px}
+.help p{margin:0 0 6px}
+.help ol{margin:0 0 10px;padding-left:3ch}
+.help li{margin:0 0 4px;padding-left:.5ch}
+.help li::marker{color:var(--fg)}
+.help b{color:var(--fg);font-weight:400}
+details{font-size:13px}
+summary{cursor:pointer;color:var(--fg)}
+details dl{margin:10px 0 0;color:var(--mute)}
+details dt{color:var(--fg);margin-top:8px}
+details dd{margin:2px 0 0}
+dialog{background:var(--bg);color:var(--fg);border:1px solid var(--mute);border-radius:8px;padding:18px 22px;width:min(92vw,520px);font-size:13px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog header{margin-bottom:10px}
+dialog ol{margin:0;padding-left:3ch;color:var(--mute)}
+dialog li{margin:0 0 6px;padding-left:.5ch}
+dialog li::marker{color:var(--fg)}
+dialog b{color:var(--fg);font-weight:400}
+#select{position:absolute;inset:0;background:var(--bg);display:none;padding-top:24px;overflow:auto}
+#select.on{display:block}
+#select h2{font-size:13px;font-weight:600;letter-spacing:.08em;margin:22px 0 8px}
+#select h2.devil{color:var(--devil)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.grid button{text-align:left;padding:10px}
+.grid small{display:block;color:var(--mute)}
+.grid .st{color:var(--star)}
+</style>
+</head>
+<body>
+<canvas id="bgfx" aria-hidden="true"></canvas>
+<main>
+  <header>
+    <h1>PIVOT <span class="mute" id="lvl"></span></h1>
+    <span class="mute">moves <span id="moves">0</span> / par <span id="par">-</span> <span id="gems"></span></span>
+  </header>
+  <canvas id="cv"></canvas>
+  <div id="msg"></div>
+  <footer>
+    <button id="m-normal">normal</button>
+    <button id="m-devil">devil</button>
+    <button id="open">levels</button>
+    <button id="help">help</button>
+    <button id="next" hidden>next</button>
+    <span class="spacer"></span>
+    <button id="twist" hidden>turn</button>
+    <button id="hint">hint</button>
+    <button id="undo">undo</button>
+    <button id="reset">restart</button>
+    <button id="snd" aria-label="Sound on" title="Sound on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/><path class="cross" d="M16 9l5 6M21 9l-5 6" style="display:none"/></svg></button>
+  </footer>
+  <div class="below">
+  <div class="help">
+    <ol>
+      <li>Click a dot to grip it. The arm swings over and its old base becomes the new hand.</li>
+      <li>Click a block to pick it up, then click empty space to drop it. Press T to turn a plank.</li>
+      <li>Reach the flag in as few moves as you can. Par is the best solution plus a little slack.</li>
+    </ol>
+    <p>Z undo · R restart · H hint · T turn · M sound · ? help</p>
+  </div>
+  <details>
+    <summary>Theory behind the game</summary>
+    <dl>
+      <dt>Inverse kinematics</dt>
+      <dd>The arm has three joints but only needs to reach a point, so many poses work. The game tries hand angles, solves the other two joints with the law of cosines, drops poses that hit a wall, and keeps the pose closest to the current one.</dd>
+      <dt>Collision detection</dt>
+      <dd>Each arm segment is sampled along its length and checked against the grid. Where two solid cells touch only at a corner, the gap between them counts as closed.</dd>
+      <dt>Breadth-first search</dt>
+      <dd>A state is where the arm stands, where every block is, what it holds and what has broken. BFS explores states in order of move count, so the first time it reaches the flag is a shortest solution. That gives par and hints.</dd>
+      <dt>Pruning</dt>
+      <dd>The search skips targets out of reach before building anything, and skips states it has already seen before running the expensive arm check. Each state it searches from gets a lookup grid of what is solid and what can be gripped.</dd>
+      <dt>Adversarial search</dt>
+      <dd>The devil tries every red stone and every block, solves the level again for each, and picks the one that makes your shortest path longest. If none does, it attacks the first thing your best route needs. This is one step of minimax.</dd>
+      <dt>Procedural generation</dt>
+      <dd>Endless levels are generate and test: build a random layout, solve it, keep it only if the solution has the right length and its pieces matter. It runs in a Web Worker so the page stays responsive.</dd>
+      <dt>Cellular simulation</dt>
+      <dd>Pieces fall one cell at a time until something holds them. A piece resting on grease slides sideways instead.</dd>
+    </dl>
+  </details>
+  </div>
+  <dialog id="helpbox" aria-labelledby="help-title">
+    <header><h1 id="help-title">HELP</h1><form method="dialog"><button>close</button></form></header>
+    <ol>
+      <li><b>Hatched</b> can't be gripped.</li>
+      <li><b>Cracked</b> breaks after one use.</li>
+      <li><b>Greasy</b> blocks can be carried but not climbed. Anything set on one slides off.</li>
+      <li>A <b>plate</b> holds its door open while a block sits on it.</li>
+      <li><b>◆</b> is optional and costs a move.</li>
+      <li>In <b>devil mode</b>, after each of your moves the devil breaks a red stone or greases a block. It goes after whatever your best route needs.</li>
+    </ol>
+  </dialog>
+  <div id="select">
+    <header><h1>LEVELS</h1><button id="close">close</button></header>
+    <div class="grid" id="grid"></div>
+  </div>
+</main>
+<script>
+const SRC = document.currentScript.textContent;
+/* LOGIC */
+const LINK = 1.5, REACH = 3 * LINK, SAMPLES = 72;
+
+// # wall  ~ slick  % cracked (breaks after one use)  X devil stone  p/q plate (needs a wall under it)  P/Q door
+// B block  G greasy block  == plank lying flat  | plank standing up (two cells)  * gem  S start  F flag
+const LEVELS = [
+  { name: 'step', map: [
+    '~~~~~~~~~~~~~~~~',
+    '~*.............~',
+    '~..............~',
+    '~..............~',
+    '~..........#...~',
+    '~S.........#..F~',
+    '################'] },
+  { name: 'carry', map: [
+    '~~~~~~~~~~~~~~~~~~',
+    '~*...............~',
+    '~................~',
+    '~................~',
+    '~................~',
+    '~SB.~~~~~~~.....F~',
+    '##################'] },
+  { name: 'leapfrog', map: [
+    '~~~~~~~~~~~~~~~~~~~~~~~~',
+    '~*.....................~',
+    '~......................~',
+    '~......................~',
+    '~......................~',
+    '~SBB~~~~~~~~~~........F~',
+    '########################'] },
+  { name: 'stairs', map: [
+    '~~~~~~~~~~~~~~~~',
+    '~..............~',
+    '~*...........F.~',
+    '~..........~###~',
+    '~..........~~~~~',
+    '~..........~~~~~',
+    '~..........~~~~~',
+    '~..........~~~~~',
+    '~SB.B.B....~~~~~',
+    '################'] },
+  { name: 'lift', opt: 12, map: [
+    '~~~~~~~~~~~~~~~~~~~~~',
+    '~...................~',
+    '~.................F.~',
+    '~......##.......~###~',
+    '~...............~~~~~',
+    '~...............~~~~~',
+    '~..........%....~~~~~',
+    '~S==G..~~.~~.~..~~~~~',
+    '~###################~'] },
+  { name: 'counterweight', opt: 15, map: [
+    '~~~~~~~~~~~~~~~~~~~~~~',
+    '~..........P.........~',
+    '~....%.....P.........~',
+    '~.......~~.P..%......~',
+    '~.......~~.P.........~',
+    '~.|.....~~.P.........~',
+    '~S|.Gp..~~.P~~~~~~~.F~',
+    '~####################~'] },
+];
+
+function load(def) {
+  const h = def.map.length, w = def.map[0].length, rows = def.map.map(r => [...r]), grid = [], blocks = [], gems = [], plates = {}, doors = {}, taken = new Set();
+  let id = 0;
+  let base, flag;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let ch = rows[y][x];
+    const i = y * w + x;
+    if (ch === 'S') { base = { x, y }; ch = '.'; }
+    else if (ch === 'F') { flag = { x, y }; ch = '.'; }
+    else if (ch === 'B' || ch === 'G') { blocks.push(ch === 'G' ? { x, y, w: 1, h: 1, oil: true, id: id++ } : { x, y, w: 1, h: 1, id: id++ }); ch = '.'; }
+    else if (ch === '*') { gems.push(i); ch = '.'; }
+    else if (ch === '=') { if (!taken.has(i) && rows[y][x + 1] === '=') { blocks.push({ x, y, w: 2, h: 1, id: id++ }); taken.add(i + 1); } ch = '.'; }
+    else if (ch === '|') { if (!taken.has(i) && rows[y + 1] && rows[y + 1][x] === '|') { blocks.push({ x, y, w: 1, h: 2, id: id++ }); taken.add(i + w); } ch = '.'; }
+    else if (ch === 'p' || ch === 'q') { if ('#~%X'.includes((rows[y + 1] || [])[x])) (plates[ch] = plates[ch] || []).push(i); else ch = '.'; }   // a plate must sit on a wall
+    else if (ch === 'P' || ch === 'Q') (doors[ch] = doors[ch] || []).push(i);
+    grid.push(ch);
+  }
+  return { w, h, grid, flag, gems, plates, doors, hasDevil: grid.includes('X'),
+    start: { base, blocks, hold: null, broken: [], gems: [] } };
+}
+
+const clone = s => ({ base: { ...s.base }, blocks: s.blocks.map(b => ({ ...b })), hold: s.hold && { ...s.hold }, broken: s.broken.slice(), gems: s.gems.slice() });
+const at = (L, x, y) => (x < 0 || y < 0 || x >= L.w || y >= L.h) ? '~' : L.grid[y * L.w + x];
+const blockAt = (s, x, y) => s.blocks.find(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+const hasBlock = (s, x, y) => !!blockAt(s, x, y);
+const isDoor = c => c === 'P' || c === 'Q';
+const cxy = (L, i) => [i % L.w, (i / L.w) | 0];
+// a door is open while a block sits on its plate, or while a block jams it
+function doorOpen(L, s, c) {
+  for (const i of L.plates[c.toLowerCase()] || []) if (hasBlock(s, ...cxy(L, i))) return true;
+  return (L.doors[c] || []).some(i => hasBlock(s, ...cxy(L, i)));
+}
+// stone that can break: cracked stone and the devil's stones
+const breakable = c => c === '%' || c === 'X';
+const isStone = c => c === '#' || c === '%' || c === 'X';
+const intact = (L, s, x, y, c) => isStone(c) && !(breakable(c) && s.broken.includes(y * L.w + x));
+function solid(L, s, x, y) {
+  const c = at(L, x, y);
+  if (c === '~') return true;
+  if (isStone(c)) return intact(L, s, x, y, c);
+  if (hasBlock(s, x, y)) return true;
+  if (isDoor(c)) return !doorOpen(L, s, c);
+  return false;
+}
+const grip = (L, s, x, y) => {
+  const bl = blockAt(s, x, y);
+  return intact(L, s, x, y, at(L, x, y)) || (!!bl && !bl.oil);   // grease: nothing to hold on to
+};
+const N4 = [[0, 1], [-1, 0], [1, 0], [0, -1]];
+
+const isNodeAt = (L, s, x, y) => !solid(L, s, x, y) && !isDoor(at(L, x, y)) && N4.some(([dx, dy]) => grip(L, s, x + dx, y + dy));
+
+// The arm check and the solver ask "is this cell solid / a hold?" thousands of times per state, so a state that
+// gets searched from or drawn gets a lookup grid. Same rules as solid() / grip() / isNodeAt(), in one pass.
+// This relies on a state never changing once it has a grid: new states are clones, settled before use.
+const SOLID = 1, GRIP = 2, NODE = 4, grids = new WeakMap();
+function cells(L, s) {
+  let g = grids.get(s);
+  if (g) return g;
+  const { w, h, grid } = L, n = w * h;
+  g = new Uint8Array(n);
+  const open = {};
+  for (const c in L.doors) open[c] = doorOpen(L, s, c);
+  for (let i = 0; i < n; i++) {
+    const c = grid[i];
+    if (c === '~') g[i] = SOLID;
+    else if (isStone(c)) g[i] = breakable(c) && s.broken.includes(i) ? 0 : SOLID | GRIP;
+    else if (isDoor(c) && !open[c]) g[i] = SOLID;
+  }
+  for (const b of s.blocks) for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) {
+    const i = y * w + x;
+    if (!isStone(grid[i])) g[i] |= SOLID;   // as in solid(): a stone cell's state wins
+    if (!b.oil) g[i] |= GRIP;
+  }
+  for (let y = 0, i = 0; y < h; y++) for (let x = 0; x < w; x++, i++)
+    if (!(g[i] & SOLID) && !isDoor(grid[i]) && ((y + 1 < h && g[i + w] & GRIP) || (x > 0 && g[i - 1] & GRIP) || (x + 1 < w && g[i + 1] & GRIP) || (y > 0 && g[i - w] & GRIP))) g[i] |= NODE;
+  grids.set(s, g);
+  return g;
+}
+function isNode(L, s, x, y) {
+  const g = grids.get(s);
+  if (!g) return isNodeAt(L, s, x, y);
+  return x >= 0 && y >= 0 && x < L.w && y < L.h && (g[y * L.w + x] & NODE) > 0;
+}
+const C = p => ({ x: p.x + .5, y: p.y + .5 });
+const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+const isBase = (s, x, y) => s.base.x === x && s.base.y === y;
+
+// blocks and planks fall until any part rests on something (the arm's base counts)
+let trail = null;   // the page sets this to a Map to record each block's steps, so falls and slides can be animated
+const step = (b, slide) => { if (!trail.has(b.id)) trail.set(b.id, []); trail.get(b.id).push({ x: b.x, y: b.y, slide }); };
+function settle(L, s) {
+  const free = (b, x, y) => {   // can block b occupy cell (x, y)?
+    if (x < 0 || y < 0 || x >= L.w || y >= L.h || isBase(s, x, y)) return false;
+    const o = blockAt(s, x, y);
+    return o ? o === b : !solid(L, s, x, y);
+  };
+  const fits = (b, sx) => { for (let j = 0; j < b.h; j++) for (let i = 0; i < b.w; i++) if (!free(b, b.x + i + sx, b.y + j)) return false; return true; };
+  for (let pass = 0; pass < 20; pass++) {
+    let moved = false;
+    s.blocks.sort((a, b) => b.y - a.y);   // lowest first
+    for (const b of s.blocks) for (let guard = 0; guard < 40; guard++) {
+      // the row just under the block: empty (fall), only grease (slide), or anything firm (stop)
+      const y = b.y + b.h;
+      let firm = false, oil = false;
+      for (let i = 0; i < b.w && !firm; i++) {
+        const x = b.x + i;
+        if (x < 0 || y < 0 || x >= L.w || y >= L.h || isBase(s, x, y)) { firm = true; break; }
+        const o = blockAt(s, x, y);
+        if (o) { if (o.oil) oil = true; else firm = true; }
+        else if (solid(L, s, x, y)) firm = true;
+      }
+      if (firm) break;
+      if (!oil) { b.y++; moved = true; if (trail) step(b, false); continue; }
+      // resting only on grease: it slides off sideways (away from the arm first) if there's room
+      const away = Math.sign(b.x - s.base.x) || 1;
+      const sx = fits(b, away) ? away : fits(b, -away) ? -away : 0;
+      if (!sx) break;
+      b.x += sx; moved = true; if (trail) step(b, true);
+    }
+    if (!moved) break;
+  }
+}
+// Is the arm segment (px, py)→(qx, qy) clear? Every segment is one link long, so it's always sampled at the same
+// STEPS + 1 points (every ~0.08 cells), far end first since that's where it usually hits. Cells inside `skip` are ignored.
+const STEPS = Math.ceil(LINK / 0.08);
+const blocked = (L, g, skip, x, y) =>
+  !(skip && x >= skip.x && x < skip.x + skip.w && y >= skip.y && y < skip.y + skip.h) &&
+  (x < 0 || y < 0 || x >= L.w || y >= L.h || (g[y * L.w + x] & SOLID) > 0);
+function segFree(L, g, px, py, qx, qy, skip) {
+  const dx = qx - px, dy = qy - py;
+  let lx = NaN, ly = NaN;
+  for (let i = STEPS; i >= 0; i--) {
+    const x = Math.floor(px + dx * i / STEPS), y = Math.floor(py + dy * i / STEPS);
+    if (x === lx && y === ly) continue;   // neighbouring samples mostly land in the same cell
+    if (blocked(L, g, skip, x, y)) return false;
+    // stepping diagonally past a corner where two solid cells touch: that gap is too thin for the arm
+    if (x !== lx && y !== ly && !Number.isNaN(lx) && blocked(L, g, skip, x, ly) && blocked(L, g, skip, lx, y)) return false;
+    lx = x; ly = y;
+  }
+  return true;
+}
+
+// Inverse kinematics for a planar 3-link arm. It's redundant (3 joints, 2D target), so sample the hand angle,
+// solve the remaining 2-link problem analytically (elbow up / down), drop poses that hit the world,
+// and keep the one closest to the current pose (the solver passes no pose and takes the first that fits).
+const HAND = Array.from({ length: SAMPLES }, (_, i) => { const a = i / SAMPLES * 2 * Math.PI; return [a, Math.cos(a), Math.sin(a)]; });
+function ik(L, s, b, t, cur, skip) {
+  if (Math.hypot(t.x - b.x, t.y - b.y) > REACH) return null;
+  const grid = cells(L, s);
+  let best = null, bc = Infinity;
+  for (const [a3, c3, s3] of HAND) {
+    const wx = t.x - LINK * c3, wy = t.y - LINK * s3;   // wrist
+    const dx = wx - b.x, dy = wy - b.y, d = Math.hypot(dx, dy);
+    if (d > 2 * LINK) continue;
+    const g = Math.atan2(dy, dx), al = Math.acos(d / (2 * LINK));
+    for (let sg = 1; sg >= -1; sg -= 2) {
+      const a1 = g + sg * al, ex = b.x + LINK * Math.cos(a1), ey = b.y + LINK * Math.sin(a1);   // elbow
+      const a2 = Math.atan2(wy - ey, wx - ex);
+      const c = cur ? wrap(a1 - cur[0]) ** 2 + wrap(a2 - cur[1]) ** 2 + wrap(a3 - cur[2]) ** 2 : 0;
+      if (c >= bc) continue;
+      if (segFree(L, grid, b.x, b.y, ex, ey) && segFree(L, grid, ex, ey, wx, wy) && segFree(L, grid, wx, wy, t.x, t.y, skip)) {
+        best = [a1, a2, a3]; bc = c;
+        if (!cur) return best;
+      }
+    }
+  }
+  return best;
+}
+
+// What happens if the player clicks `cell` ({x, y}, or {twist: true}): { kind, angles, next } or { err }.
+// When holding, `cell` is the top-left of where the held piece would go.
+// The solver passes `fresh`: it skips targets out of reach before building anything, then builds the next state
+// and skips the (expensive) arm check for states it has already seen.
+function act(L, s, cell, cur, fresh) {
+  if (cell.twist) {
+    if (!s.hold || s.hold.w === s.hold.h) return { err: 'Nothing to turn.' };
+    const n = clone(s); n.hold = { ...s.hold, w: s.hold.h, h: s.hold.w };
+    if (fresh && !fresh(n)) return { err: 'seen' };
+    return { kind: 'twist', angles: cur, next: n };
+  }
+  const { x, y } = cell, b = C(s.base), idx = y * L.w + x;
+  const far = t => (t.x - b.x) ** 2 + (t.y - b.y) ** 2 > REACH * REACH,   // exact: all coordinates here are halves
+        FAR = { err: 'Out of reach.' };
+  const done = (kind, n, t, skip, extra) => {
+    if (far(t)) return FAR;
+    if (fresh && !fresh(n)) return { err: 'seen' };
+    const a = ik(L, s, b, t, cur, skip);
+    return a ? { kind, angles: a, next: n, ...extra } : { err: 'The arm would hit something.' };
+  };
+  if (s.hold) {
+    const { w, h } = s.hold, t = { x: x + w / 2, y: y + h / 2 };
+    if (fresh && far(t)) return FAR;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++)
+      if (solid(L, s, x + i, y + j) || isBase(s, x + i, y + j) || x + i >= L.w || y + j >= L.h) return { err: w !== h ? 'No room. Press T to turn it.' : 'Drop it in empty space.' };
+    const n = clone(s); n.hold = null; n.blocks.push({ ...s.hold, x, y }); settle(L, n);
+    return done('place', n, t);
+  }
+  if (isBase(s, x, y)) return { err: '' };
+  const bl = blockAt(s, x, y);
+  if (bl) {
+    const t = { x: bl.x + bl.w / 2, y: bl.y + bl.h / 2 };
+    if (fresh && far(t)) return FAR;
+    const { x: _x, y: _y, ...held } = bl;
+    const n = clone(s); n.blocks = n.blocks.filter(k => k.id !== bl.id); n.hold = held; settle(L, n);
+    if (!isNode(L, n, n.base.x, n.base.y)) return { err: "You're holding on to it." };
+    return done('pick', n, t, bl);
+  }
+  if (fresh && far(C(cell))) return FAR;   // everything below targets the cell itself
+  if (L.gems.includes(idx) && !s.gems.includes(idx) && !isNode(L, s, x, y) && !solid(L, s, x, y)) {
+    const n = clone(s); n.gems.push(idx);
+    return done('gem', n, C(cell));
+  }
+  if (isNode(L, s, x, y)) {
+    const n = clone(s); n.base = { x, y };
+    for (const [dx, dy] of N4) {   // cracked stone you let go of crumbles
+      const cx = s.base.x + dx, cy = s.base.y + dy, ci = cy * L.w + cx, c = at(L, cx, cy);
+      if (c === '%' && cx >= 0 && cy >= 0 && cx < L.w && cy < L.h && !n.broken.includes(ci)) n.broken.push(ci);
+    }
+    n.broken.sort((p, q) => p - q);
+    settle(L, n);
+    if (!isNode(L, n, x, y)) return { err: 'That hold would break under you.' };
+    if (L.gems.includes(idx) && !n.gems.includes(idx)) n.gems.push(idx);
+    return done('walk', n, C(cell));
+  }
+  const c = at(L, x, y);
+  return { err: c === '~' ? "Can't grip that." : isDoor(c) ? 'Closed. Put a block on its plate.' : 'Nothing to grip.' };
+}
+
+const stateKey = s => `${s.base.x},${s.base.y},${s.hold ? s.hold.w + 'x' + s.hold.h + (s.hold.oil ? 'o' : '') : '-'}|` + s.blocks.map(b => `${b.x},${b.y},${b.w}${b.h}${b.oil ? 'o' : ''}`).sort().join(';') + '|' + s.broken.join(',');
+// Breadth-first search over every state the arm can reach. Returns the shortest list of actions to the flag
+// (with allGems, the shortest that also collects every gem).
+// With maxDepth it gives up on anything longer, which is much cheaper when only short solutions are of interest.
+function plan(L, s0, max = 60000, allGems = false, maxDepth = Infinity) {
+  const key = allGems ? s => stateKey(s) + '|' + s.gems.slice().sort((a, b) => a - b).join(',') : stateKey;
+  const prev = new Map([[key(s0), null]]), q = [s0], depth = [0], r = Math.ceil(REACH) + 1;
+  for (let i = 0; i < q.length && i < max; i++) {
+    const s = q[i];
+    cells(L, s);   // every candidate move below reads this state's grid
+    if (s.base.x === L.flag.x && s.base.y === L.flag.y && (!allGems || s.gems.length === L.gems.length)) {
+      const path = [];
+      for (let k = key(s); prev.get(k); k = prev.get(k).from) path.unshift(prev.get(k).cell);
+      return path;
+    }
+    if (depth[i] >= maxDepth) continue;
+    const tryCell = cell => {
+      const res = act(L, s, cell, null, n => !prev.has(key(n)));
+      if (!res.kind || (res.kind === 'gem' && !allGems)) return;
+      prev.set(key(res.next), { from: key(s), cell });
+      q.push(res.next); depth.push(depth[i] + 1);
+    };
+    if (s.hold && s.hold.w !== s.hold.h) tryCell({ twist: true });
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (dx * dx + dy * dy > (REACH + 1) ** 2) continue;   // no target within reach (they sit at most ~0.7 from the cell's centre)
+      const x = s.base.x + dx, y = s.base.y + dy;
+      if (x >= 0 && y >= 0 && x < L.w && y < L.h) tryCell({ x, y });
+    }
+  }
+  return null;
+}
+// The devil's turn. It can break a red stone or grease a block. It picks the move that makes your
+// shortest way to the flag longest. If nothing makes it longer, it attacks the first red stone or block
+// your best route depends on, and failing that the red stone closest to you. It never leaves you with no way out.
+// Returns { what, cell | id, next } or null (nothing in range).
+function devilTurn(L, s, max = 20000) {
+  const cur = plan(L, s, max);
+  if (!cur) return null;
+  // what your current best route uses, and how soon; and every place your base will stand
+  const soon = new Map(), stands = [s.base];
+  let st = s;
+  cur.forEach((c, k) => {
+    const r = act(L, st, c, null); if (!r.kind) return;
+    if (r.kind === 'pick' || r.kind === 'place') { const id = r.kind === 'pick' ? r.next.hold.id : st.hold.id; if (!soon.has('b' + id)) soon.set('b' + id, k); }
+    if (r.kind === 'walk') {
+      stands.push(r.next.base);
+      for (const [dx, dy] of N4) {
+        const x = c.x + dx, y = c.y + dy, bl = blockAt(r.next, x, y);
+        if (at(L, x, y) === 'X' && !soon.has('x' + (y * L.w + x))) soon.set('x' + (y * L.w + x), k);
+        if (bl && !bl.oil && !soon.has('b' + bl.id)) soon.set('b' + bl.id, k);
+      }
+    }
+    st = r.next;
+  });
+  const near = (x, y) => stands.some(p => Math.max(Math.abs(p.x - x), Math.abs(p.y - y)) <= 4);
+  const options = [];
+  L.grid.forEach((c, i) => {
+    const [x, y] = cxy(L, i);
+    if (c === 'X' && !s.broken.includes(i) && near(x, y)) options.push({ what: 'break', cell: i, key: 'x' + i, dist: Math.hypot(x - s.base.x, y - s.base.y) });
+  });
+  for (const b of s.blocks) if (!b.oil) options.push({ what: 'grease', id: b.id, key: 'b' + b.id, dist: 99 });
+  let best = null, bestScore = 0;
+  for (const o of options) {
+    const n = clone(s);
+    if (o.what === 'break') { n.broken.push(o.cell); n.broken.sort((a, b) => a - b); }
+    else n.blocks.find(b => b.id === o.id).oil = true;
+    settle(L, n);
+    if (!isNode(L, n, n.base.x, n.base.y)) continue;
+    const p = plan(L, n, max);
+    if (!p) continue;
+    const score = (p.length - cur.length) * 100 + (soon.has(o.key) ? 50 - soon.get(o.key) : Math.max(0, 6 - o.dist));
+    if (score > bestScore) { bestScore = score; best = { what: o.what, cell: o.cell, id: o.id, next: n }; }
+  }
+  return best;
+}
+// Simulated game: you always take the solver's best move, the devil always answers. Gives a fair par for devil levels.
+function devilGame(L, s0, limit = 80) {
+  let s = clone(s0), moves = 0;
+  while (moves < limit) {
+    const p = plan(L, s); if (!p || !p.length) break;
+    s = act(L, s, p[0], null).next; moves++;
+    if (s.base.x === L.flag.x && s.base.y === L.flag.y) return moves;
+    const d = devilTurn(L, s); if (d) s = d.next;
+  }
+  return null;
+}
+// par leaves some room: optimal + ~25%. Two stars for a little more.
+const parOf = opt => opt + Math.max(2, Math.round(opt * .25));
+const twoOf = par => par + Math.max(3, Math.round(par * .5));
+const starsFor = (moves, par, hinted) => Math.min(hinted ? 2 : 3, moves <= par ? 3 : moves <= twoOf(par) ? 2 : 1);
+/* END LOGIC */
+/* GEN */
+// Random levels are generate-and-test: build a random layout, solve it, keep it only if the solution has the
+// right length and its pieces matter.
+function rng(seed) { return () => (seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff) / 0x7fffffff; }   // imul: plain * loses the low bits
+const RANGE = { normal: [10, 13], devil: [12, 16] };
+function candidate(mode, r) {
+  const W = 17 + Math.floor(r() * 5), H = 7 + Math.floor(r() * 2), F = H - 2;
+  const g = Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) =>
+    y === 0 || x === 0 || x === W - 1 ? '~' : y === H - 1 ? '#' : '.'));
+  const a = 3 + Math.floor(r() * 3), b = W - 4 - Math.floor(r() * 3);
+  for (let x = a; x <= b; x++) g[F][x] = '~';   // a floor you can't grip
+  g[F][1] = 'S'; g[F][W - 2] = 'F';
+  const k = 4 + Math.floor(r() * 5);
+  for (let i = 0; i < k; i++) {
+    const x = 3 + Math.floor(r() * (W - 6)), y = 1 + Math.floor(r() * (F - 1));
+    g[y][x] = r() < .8 ? (r() < .3 ? '%' : '#') : '~';   // some holds crumble after one use
+    if (r() < .3 && x + 1 < W - 2) g[y][x + 1] = '#';
+  }
+  const rule = mode === 'devil' ? 'devil' : null;
+  const roll = r();
+  if (roll < .45) g[F][2] = r() < .3 ? 'G' : 'B';
+  else if (roll < .65 && a > 3) { g[F][2] = 'B'; g[F][3] = 'B'; }
+  else if (roll < .8 && a > 3) { g[F][2] = '='; g[F][3] = '='; }
+  else if (roll < .9 && a > 3) { g[F][2] = 'G'; g[F][3] = 'B'; }
+  if (r() < .35 && a > 3 && g[F][2] !== '.') {   // a door near the flag, opened by a plate on the start side
+    const dx = W - 4;
+    for (let y = 1; y <= F; y++) g[y][dx] = 'P';
+    g[F][a - 1] = 'p';
+    if (g[F][dx - 1] === '~') g[F][dx - 1] = '.';
+  }
+  if (rule === 'devil') {
+    for (let y = 1; y < F; y++) for (let x = 2; x < W - 2; x++) if (g[y][x] === '#') g[y][x] = 'X';
+    for (let i = 0; i < 5; i++) { const x = 3 + Math.floor(r() * (W - 6)), y = 1 + Math.floor(r() * (F - 1)); if (g[y][x] === '.') g[y][x] = 'X'; }
+  }
+  return { map: g.map(row => row.join('')), rule };
+}
+function evaluate(c, mode, maxStates = 15000) {
+  const def = { name: 'endless', random: mode, map: c.map };
+  const L = load(def), [lo, hi] = RANGE[mode];
+  const p = plan(L, L.start, maxStates, false, c.rule === 'devil' ? hi - 2 : hi);   // longer than allowed: not interested
+  if (!p) return null;
+  let opt = p.length;
+  if (c.rule === 'devil') {
+    if (opt > hi - 2) return null;
+    const g = devilGame(L, L.start, 25);
+    if (!g || g - opt < 3) return null;
+    opt = g;
+  }
+  if (opt < lo || opt > hi) return null;
+  if (L.start.blocks.length && !c.rule) {   // pieces in a normal level must be needed
+    const v = load(def); v.start.blocks = [];
+    const q = plan(v, v.start, maxStates);
+    if (q && q.length > opt - 3) return null;
+  }
+  def.opt = opt;
+  return def;
+}
+function generate(mode, seed, budget = 20000) {
+  const r = rng(seed), t0 = Date.now();
+  let tries = 0;
+  while (Date.now() - t0 < budget) {
+    tries++;
+    const d = evaluate(candidate(mode, r), mode);
+    if (d) { d.tries = tries; d.ms = Date.now() - t0; return d; }
+  }
+  return null;
+}
+/* END GEN */
+
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+let li = 0, def, L, s, ang, goal, pending, hist, moves, opt, par, mouse = null, hover = null, hintCell = null, hinted = false, won = false, col, S = 40;
+let doorAnim = {}, parts = [], blink = 0, lastT = 0, wrist = 0, jaw = 1, gemOpt = null, smash = null, thinking = false;
+const disp = new Map();   // where each block is drawn, so falls can be animated
+
+const store = {
+  all() { try { return JSON.parse(localStorage.getItem('pivot') || '{}'); } catch { return {}; } },
+  save(i, rec) {
+    try {
+      const o = this.all(), old = o[i] || {};
+      o[i] = { stars: Math.max(old.stars || 0, rec.stars), gems: Math.max(old.gems || 0, rec.gems), best: Math.min(old.best || 1e9, rec.best), perfect: old.perfect || rec.perfect, gemRun: old.gemRun || rec.gemRun };
+      localStorage.setItem('pivot', JSON.stringify(o));
+    } catch {}
+  },
+};
+const unlocked = i => i === 0 || (store.all()[i - 1] || {}).stars > 0;
+const random = () => def && def.random;
+const devilish = () => def && def.random === 'devil';
+
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  col = Object.fromEntries(['bg', 'fg', 'mute', 'wall', 'soft', 'crack', 'accent', 'p', 'q', 'gem', 'star', 'shell', 'shelledge', 'ring', 'devil', 'oil', 'trace', 'shadow', 'hi', 'lo', 'wallhi'].map(k => [k, cs.getPropertyValue('--' + k).trim()]));
+}
+function gripDir(st) { return N4.find(([dx, dy]) => grip(L, st, st.base.x + dx, st.base.y + dy)) || [0, 1]; }
+
+// ---------- sound: synthesized, quiet, starts on the first click or key ----------
+const VOL = .22;
+const snd = { ctx: null, on: true };
+function initAudio() {
+  if (snd.ctx) return;
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  const c = snd.ctx = new AC();
+  snd.out = c.createGain(); snd.out.gain.value = snd.on ? VOL : 0; snd.out.connect(c.destination);
+  const nb = snd.noise = c.createBuffer(1, c.sampleRate, c.sampleRate), ch = nb.getChannelData(0);
+  for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+  o.type = 'sawtooth'; o.frequency.value = 90; f.frequency.value = 600; g.gain.value = 0;
+  o.connect(f); f.connect(g); g.connect(snd.out); o.start();
+  snd.whir = { o, g };
+}
+function tone(type, f0, f1, len, vol, delay = 0) {
+  if (!snd.ctx) return;
+  const c = snd.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + len);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + len);
+  o.connect(g); g.connect(snd.out); o.start(t); o.stop(t + len + .02);
+}
+function noise(f0, f1, len, vol, q = 1, delay = 0) {
+  if (!snd.ctx) return;
+  const c = snd.ctx, t = c.currentTime + delay, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  src.buffer = snd.noise; f.type = 'bandpass'; f.Q.value = q;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + len);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + len);
+  src.connect(f); f.connect(g); g.connect(snd.out); src.start(t); src.stop(t + len + .02);
+}
+const sfx = {
+  grip: () => { tone('sine', 140, 55, .14, .35); noise(900, 300, .07, .25); },
+  click: () => { tone('square', 700, 400, .04, .06); noise(2500, 1500, .03, .1, 2); },
+  land: () => { tone('sine', 90, 50, .1, .2); noise(600, 200, .06, .12); },
+  twist: () => { tone('sawtooth', 260, 420, .18, .05); noise(1200, 2400, .15, .08, 3); },
+  gem: () => [0, .08, .16].forEach((d, i) => tone('sine', [1320, 1660, 1980][i], [1320, 1660, 1980][i] * 1.01, .35, .12, d)),
+  door: () => noise(250, 900, .45, .25, 3),
+  crumble: () => [0, .05, .11, .18].forEach(d => noise(1800 * (1 + Math.random()), 400, .12, .2, 1.5, d)),
+  grease: () => { noise(300, 120, .4, .2, 2); tone('sine', 180, 90, .3, .06); },
+  err: () => tone('square', 140, 110, .1, .05),
+  win: () => [0, .1, .2, .32].forEach((d, i) => tone('triangle', [523, 659, 784, 1047][i], [523, 659, 784, 1047][i], .5, .15, d)),
+};
+function setSound(on) {
+  snd.on = on; const b = $('snd'), lbl = on ? 'Sound on' : 'Sound off';
+  b.setAttribute('aria-label', lbl); b.title = lbl;
+  b.querySelector('.wave').style.display = on ? '' : 'none'; b.querySelector('.cross').style.display = on ? 'none' : '';
+  if (snd.out) snd.out.gain.setTargetAtTime(on ? VOL : 0, snd.ctx.currentTime, .05);
+}
+
+// ---------- levels ----------
+function startLevel(i) { li = (i + LEVELS.length) % LEVELS.length; playDef(LEVELS[li]); }
+function playDef(d) {
+  def = d; L = load(def); s = clone(L.start);
+  document.documentElement.classList.toggle('devil', devilish()); readColors();
+  const [dx, dy] = gripDir(s), away = Math.atan2(-dy, -dx), b = C(s.base);
+  ang = ik(L, s, b, { x: b.x - dx * 2.4 + dy * 1.2, y: b.y - dy * 2.4 + dx * 1.2 }, [away, away, away]) || [away, away, away];
+  goal = ang.slice(); pending = null; hist = []; moves = 0; hintCell = null; hinted = false; won = false; parts = []; wrist = 0; smash = null; thinking = false;
+  disp.clear();
+  doorAnim = Object.fromEntries(Object.keys(L.doors).map(c => [c, doorOpen(L, s, c) ? 1 : 0]));
+  resize(); $('next').hidden = true;
+  if (def.opt) opt = def.opt;
+  else if (L.hasDevil) opt = devilGame(L, s);
+  else { const p = plan(L, s); opt = p ? p.length : null; }
+  par = opt ? parOf(opt) : '-'; gemOpt = null;
+  hud(); intro();
+  if (L.gems.length && !L.hasDevil) solve('gems', L.start, g => {   // the all-gems par can take a moment
+    if (def !== d) return;
+    gemOpt = g ? g.length : null;
+    if (moves === 0 && !won) intro();
+  });
+}
+function rule() {
+  return L.hasDevil ? 'The devil moves after you.' : '';
+}
+function intro() {
+  say(opt ? [`Par ${par}.`, rule(), gemOpt ? `All gems: ${gemOpt} moves.` : ''].filter(Boolean).join(' ') : 'No solution found.');
+}
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  S = Math.max(12, Math.min(44, Math.floor(cv.parentElement.clientWidth / L.w)));
+  cv.style.width = S * L.w + 'px'; cv.style.height = S * L.h + 'px';
+  cv.width = S * L.w * dpr; cv.height = S * L.h * dpr;
+  sizeBg();
+}
+function hud() {
+  $('lvl').textContent = random() ? (random() === 'devil' ? 'endless devil' : 'endless') : `${li + 1} · ${def.name}`;
+  for (const m of ['normal', 'devil']) $('m-' + m).classList.toggle('on', random() === m);
+  $('open').classList.toggle('on', !random());
+  $('moves').textContent = moves; $('par').textContent = par;
+  $('gems').textContent = L.gems.length ? `· ◆ ${s.gems.length}/${L.gems.length}` : '';
+  $('twist').hidden = !(s.hold && s.hold.w !== s.hold.h);
+}
+function say(t, html) { if (html) $('msg').innerHTML = t; else $('msg').textContent = t; }
+
+function fk(b, a) {
+  const p = [b];
+  for (const t of a) { const q = p[p.length - 1]; p.push({ x: q.x + LINK * Math.cos(t), y: q.y + LINK * Math.sin(t) }); }
+  return p;
+}
+
+function hoverCell() {
+  if (!mouse) return null;
+  return s.hold ? { x: Math.round(mouse.x - s.hold.w / 2), y: Math.round(mouse.y - s.hold.h / 2) } : { x: Math.floor(mouse.x), y: Math.floor(mouse.y) };
+}
+function track() {
+  if (pending || !mouse || won) return;
+  const b = C(s.base), d = Math.hypot(mouse.x - b.x, mouse.y - b.y), k = d > REACH - .01 ? (REACH - .01) / d : 1;
+  const a = ik(L, s, b, { x: b.x + (mouse.x - b.x) * k, y: b.y + (mouse.y - b.y) * k }, ang);
+  if (a) goal = a;
+  const cell = hoverCell();
+  hover = { cell, res: act(L, s, cell, ang) };
+}
+
+function perform(r, cell) {
+  if (r.err !== undefined) { if (r.err) { say(r.err); sfx.err(); } return; }
+  hist.push({ s: clone(s), ang: ang.slice(), moves });
+  pending = { ...r, cell }; goal = r.angles || ang.slice(); hintCell = null; say('');
+}
+function click() { if (!pending && !won && !thinking && hover) perform(hover.res, hover.cell); }
+function twist() {
+  if (pending || won || thinking) return;
+  const r = act(L, s, { twist: true }, ang);
+  if (r.kind) { wrist = (s.hold.w > s.hold.h ? 1 : -1) * Math.PI / 2; sfx.twist(); }
+  perform(r);
+}
+
+function puff(x, y, n, c, spread = .5, up = -1) {
+  for (let i = 0; i < n; i++) parts.push({ x, y, vx: (Math.random() - .5) * spread * 4, vy: up * Math.random() * 1.5, t: 0, life: .5 + Math.random() * .4, c, sz: .06 + Math.random() * .07 });
+}
+
+function finish() {
+  const p = pending; pending = null;
+  const before = s; s = p.next;
+  moves++;
+  const tip = fk(C(before.base), ang)[3];
+  if (p.kind === 'walk') {
+    ang = [ang[2] + Math.PI, ang[1] + Math.PI, ang[0] + Math.PI].map(wrap);
+    sfx.grip(); const [dx, dy] = gripDir(s); puff(tip.x + dx * .45, tip.y + dy * .45, 8, col.mute);
+    for (const ci of s.broken) if (!before.broken.includes(ci)) { const [x, y] = cxy(L, ci); puff(x + .5, y + .5, 16, col.crack, 1, .5); sfx.crumble(); }
+  } else if (p.kind === 'gem') { sfx.gem(); puff(tip.x, tip.y, 12, col.gem, 1); }
+  else if (p.kind === 'pick') { sfx.click(); disp.delete(s.hold.id); }
+  else if (p.kind === 'place') { sfx.click(); disp.set(before.hold.id, { x: p.cell.x, y: p.cell.y, v: 0, path: [] }); }
+  if (p.kind === 'place' || p.kind === 'pick' || p.kind === 'walk') follow(() => act(L, before, p.cell, null));
+  for (const c in L.doors) if (doorOpen(L, before, c) !== doorOpen(L, s, c)) sfx.door();
+  goal = ang.slice();
+  if (s.base.x === L.flag.x && s.base.y === L.flag.y) { hud(); return win(); }
+  hud();
+  if (L.hasDevil) {   // the devil's turn, after the screen has caught up
+    thinking = true; hover = null; say('The devil is thinking.');
+    const asked = s;
+    solve('devil', s, d => {
+      if (!thinking || s !== asked) return;   // undone or restarted meanwhile
+      thinking = false;
+      if (d) {
+        hist[hist.length - 1].devil = true; s = d.next;
+        follow(() => {   // redo the devil's change here to see what it shook loose
+          const n = clone(asked);
+          if (d.what === 'break') n.broken.push(d.cell); else n.blocks.find(k => k.id === d.id).oil = true;
+          settle(L, n);
+        });
+        if (d.what === 'break') {
+          const [x, y] = cxy(L, d.cell);
+          smash = { x, y, w: 1, h: 1, t: 0 }; puff(x + .5, y + .5, 22, col.devil, 1.2, .5); sfx.crumble(); tone('sawtooth', 110, 55, .35, .08);
+          say('The devil broke a stone.');
+        } else {
+          const b = s.blocks.find(k => k.id === d.id);
+          smash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0, oil: true }; puff(b.x + b.w / 2, b.y + .1, 16, col.oil, .8, .3); sfx.grease();
+          say('The devil greased a block.');
+        }
+      } else say('The devil has nothing in reach.');
+      hud(); track();
+    });
+    return;
+  }
+  track();
+}
+
+function win() {
+  won = true; hover = null; sfx.win();
+  const stars = starsFor(moves, par, hinted), perfect = opt && moves <= opt && !hinted;
+  if (!random()) store.save(li, { stars, gems: s.gems.length, best: moves, perfect, gemRun: L.gems.length && s.gems.length === L.gems.length && gemOpt && moves <= gemOpt });
+  const st = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+  const allG = L.gems.length && s.gems.length === L.gems.length;
+  const parts2 = [`${moves} moves, par ${par}.`, perfect ? 'Perfect.' : `Best possible: ${opt}.`];
+  if (hinted) parts2.push('Hint used.');
+  if (L.gems.length) parts2.push(`◆ ${s.gems.length}/${L.gems.length}${allG && gemOpt && moves <= gemOpt ? ', best gem run.' : '.'}`);
+  say(`<span class="stars">${st}</span> ${parts2.join(' ')}`, true);
+  $('next').hidden = !random() && li >= LEVELS.length - 1;
+}
+function next() { if (random()) playRandom(random()); else startLevel(li + 1); }
+
+function undo() {
+  if (pending || !hist.length) return;
+  thinking = false;
+  const h = hist.pop(); s = h.s; ang = h.ang; goal = ang.slice(); moves = h.moves; won = false; hintCell = null; wrist = 0;
+  disp.clear(); $('next').hidden = true; hud(); say(''); track();
+}
+function restart() { thinking = false; if (random()) playDef(def); else startLevel(li); }
+
+function hint() {
+  if (pending || won || thinking) return;
+  const asked = s;
+  solve('hint', s, p => {
+    if (s !== asked || pending || won || thinking) return;   // you moved on meanwhile
+    if (!p) return say('No way to the flag from here. Undo or restart.');
+    hinted = true; hintCell = p[0];
+    say(`${p.length} move${p.length > 1 ? 's' : ''} left${hintCell.twist ? '. Next: turn the plank (T)' : ''}. Hints cap you at ★★.`);
+  });
+}
+
+// ---------- background workers: one solves (devil turns, hints, gem par), one builds random levels ----------
+const SRC_LOGIC = SRC.slice(SRC.indexOf('/* LOGIC */'), SRC.indexOf('/* END GEN */'));
+const SOLVE = { devil: (L, s) => devilTurn(L, s), hint: (L, s) => plan(L, s), gems: (L, s) => plan(L, s, 60000, true) };
+function spawn(body) {
+  try { return new Worker(URL.createObjectURL(new Blob([SRC_LOGIC + '\n' + body], { type: 'text/javascript' }))); } catch { return null; }
+}
+const solver = spawn(`const SOLVE = { ${Object.entries(SOLVE).map(([k, f]) => `${k}: ${f}`)} };
+onmessage = ({ data: { id, job, map, s } }) => postMessage({ id, out: SOLVE[job](load({ map }), s) });`);
+const jobs = new Map();
+let jobId = 0;
+if (solver) solver.onmessage = ({ data: { id, out } }) => { const cb = jobs.get(id); jobs.delete(id); cb(out); };
+// run a solver job off the page's thread; callers check on return whether the answer still applies
+function solve(job, st, cb) {
+  if (!solver) { const l = L; return setTimeout(() => cb(SOLVE[job](l, clone(st))), 60); }
+  jobs.set(++jobId, cb); solver.postMessage({ id: jobId, job, map: def.map, s: st });
+}
+const BUFFER = 3;   // levels kept ready per mode
+const ready = { normal: [], devil: [] };
+let busy = false;
+let wanted = null;
+const worker = spawn('onmessage = e => postMessage({ mode: e.data.mode, def: generate(e.data.mode, e.data.seed) });');
+if (worker) {
+  worker.onmessage = e => {
+    const { mode, def: d } = e.data; busy = false;
+    if (d) ready[mode].push(d);
+    if (wanted === mode && ready[mode].length) { wanted = null; playDef(ready[mode].shift()); }
+    prefetch();
+  };
+}
+// keep the buffers topped up, one level at a time: the mode you're waiting on first, then whichever has fewest ready
+function prefetch() {
+  if (!worker || busy) return;
+  const mode = wanted || (ready.devil.length < ready.normal.length ? 'devil' : 'normal');
+  if (ready[mode].length >= BUFFER) return;
+  busy = true; worker.postMessage({ mode, seed: (Math.random() * 2 ** 31) | 0 });
+}
+function playRandom(mode) {
+  if (ready[mode].length) { playDef(ready[mode].shift()); prefetch(); return; }
+  if (!worker) {   // no worker available: build it here (the page pauses briefly)
+    say('Building a level...');
+    setTimeout(() => { const d = generate(mode, (Math.random() * 2 ** 31) | 0); if (d) playDef(d); else say('Could not build a level. Try again.'); }, 30);
+    return;
+  }
+  wanted = mode; say('Building a level...'); $('next').hidden = true;
+  prefetch();
+}
+
+// ---------- level select ----------
+function openSelect() {
+  const rec = store.all(), g = $('grid');
+  g.textContent = '';
+  LEVELS.forEach((lv, i) => {
+    const r = rec[i] || {}, b = document.createElement('button'), gems = load(lv).gems.length;
+    b.disabled = !unlocked(i);
+    b.innerHTML = `${i + 1} ${lv.name}<small><span class="st">${'★'.repeat(r.stars || 0)}${'☆'.repeat(3 - (r.stars || 0))}</span>${gems ? ` ◆ ${r.gems || 0}/${gems}` : ''}${r.perfect ? ' · perfect' : ''}</small>`;
+    b.onclick = () => { $('select').classList.remove('on'); startLevel(i); };
+    g.appendChild(b);
+  });
+  $('select').classList.add('on');
+}
+
+// ---------- drawing ----------
+// Replay how a move shifted the blocks: settle() logged each block's steps (see follow()), and every block is drawn
+// walking that path: falls speed up, slides along grease go at a steady pace and drip.
+function follow(fn) {
+  trail = new Map();
+  try { fn(); } finally {
+    for (const [id, pts] of trail) { const d = disp.get(id); if (d) d.path = pts; }
+    trail = null;
+  }
+}
+function animBlocks(dt) {
+  for (const b of s.blocks) {
+    let d = disp.get(b.id);
+    if (!d) { d = { x: b.x, y: b.y, v: 0, path: [] }; disp.set(b.id, d); }
+    const path = d.path || (d.path = []), tgt = path[0] || b;
+    if (tgt.slide && !d.sliding) { sfx.grease(); puff(d.x + b.w / 2, d.y + b.h, 8, col.oil, .6, -.3); d.v = 0; }   // hit grease
+    d.sliding = !!tgt.slide;
+    const dx = tgt.x - d.x, dy = tgt.y - d.y, dist = Math.hypot(dx, dy);
+    if (dist < 1e-3) {
+      d.x = tgt.x; d.y = tgt.y;
+      if (path.length) { path.shift(); continue; }
+      if (d.v > 3) { puff(d.x + b.w / 2, d.y + b.h - .05, 6, col.mute); sfx.land(); }
+      d.v = 0; continue;
+    }
+    if (d.sliding) {
+      d.v = Math.min(3.5, d.v + 10 * dt);
+      if (Math.random() < dt * 14) puff(d.x + (dx < 0 ? b.w : 0), d.y + b.h, 1, col.oil, .15, 0);   // drips left behind
+    } else d.v = Math.min(7, d.v + 16 * dt);   // falls start slow and speed up
+    const st = Math.min(dist, d.v * dt);
+    d.x += dx / dist * st; d.y += dy / dist * st;
+  }
+}
+function arrow(cx, cy, dir, size, color, alpha) {
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.atan2(dir[1], dir[0]) - Math.PI / 2);
+  ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = size * .14; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, -size / 2); ctx.lineTo(0, size / 2); ctx.moveTo(-size * .3, size * .2); ctx.lineTo(0, size / 2); ctx.lineTo(size * .3, size * .2); ctx.stroke();
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function draw(t) {
+  const dt = Math.min(.05, t - lastT); lastT = t;
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(S * dpr, 0, 0, S * dpr, 0, 0);
+  ctx.fillStyle = col.bg; ctx.fillRect(0, 0, L.w, L.h);
+  for (const c in doorAnim) doorAnim[c] += ((doorOpen(L, s, c) ? 1 : 0) - doorAnim[c]) * Math.min(1, dt * 8);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(sceneryLayer(L, s), 0, 0); ctx.restore();
+  for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
+    const c = at(L, x, y), gone = s.broken.includes(y * L.w + x) && breakable(c);
+    if (c === 'X' && !gone) {
+      ctx.strokeStyle = col.devil; ctx.lineWidth = .09; ctx.beginPath();
+      ctx.moveTo(x + .25, y + .25); ctx.lineTo(x + .75, y + .75); ctx.moveTo(x + .75, y + .25); ctx.lineTo(x + .25, y + .75); ctx.stroke();
+    } else if (c === '%' && !gone) {
+      ctx.fillStyle = col.crack; ctx.fillRect(x + .02, y + .02, .96, .96);
+      ctx.strokeStyle = col.bg; ctx.lineWidth = .05; ctx.beginPath();
+      ctx.moveTo(x + .2, y + .1); ctx.lineTo(x + .45, y + .45); ctx.lineTo(x + .35, y + .7); ctx.moveTo(x + .45, y + .45); ctx.lineTo(x + .8, y + .55);
+      ctx.stroke();
+    } else if (c === 'p' || c === 'q') {
+      const pressed = hasBlock(s, x, y);
+      ctx.fillStyle = col[c]; ctx.fillRect(x + .12, y + (pressed ? .9 : .8), .76, pressed ? .1 : .2);
+    } else if (isDoor(c)) {
+      const hgt = 1 - doorAnim[c];
+      ctx.strokeStyle = col[c.toLowerCase()]; ctx.lineWidth = .1; ctx.lineCap = 'butt';
+      if (hgt > .02) { ctx.beginPath(); for (const bx of [.2, .5, .8]) { ctx.moveTo(x + bx, y); ctx.lineTo(x + bx, y + hgt); } ctx.stroke(); }
+      ctx.fillStyle = col[c.toLowerCase()]; ctx.globalAlpha = .12 * hgt; ctx.fillRect(x, y, 1, 1); ctx.globalAlpha = 1;
+    }
+  }
+  // cracked stone you are holding on to breaks when you let go: outline it
+  if (!won && !s.hold) {
+    const pulse = .55 + .35 * Math.sin(t * 5);
+    for (const [dx, dy] of N4) {
+      const x = s.base.x + dx, y = s.base.y + dy, c = at(L, x, y);
+      if (breakable(c) && c !== 'X' && !s.broken.includes(y * L.w + x) && x >= 0 && y >= 0 && x < L.w && y < L.h) {
+        ctx.globalAlpha = pulse; ctx.strokeStyle = col.devil; ctx.lineWidth = .06; ctx.setLineDash([.12, .08]);
+        ctx.strokeRect(x + .06, y + .06, .88, .88); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      }
+    }
+  }
+  for (const gi of L.gems) if (!s.gems.includes(gi)) {
+    const [x, y] = cxy(L, gi), bob = Math.sin(t * 2.5 + gi) * .06, cx = x + .5, cy = y + .5 + bob;
+    shadow(.35 + Math.sin(t * 3 + gi) * .12, 0, col.gem);   // a soft, pulsing glow
+    ctx.fillStyle = col.gem; ctx.beginPath(); ctx.moveTo(cx, cy - .28); ctx.lineTo(cx + .2, cy); ctx.lineTo(cx, cy + .28); ctx.lineTo(cx - .2, cy); ctx.fill();
+    noShadow();
+    ctx.fillStyle = col.bg; ctx.globalAlpha = .5; ctx.beginPath(); ctx.moveTo(cx - .05, cy - .14); ctx.lineTo(cx + .03, cy - .05); ctx.lineTo(cx - .08, cy); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  {
+    const f = L.flag, wave = Math.sin(t * 4) * .05;
+    ctx.strokeStyle = col.fg; ctx.lineWidth = .05;
+    ctx.beginPath(); ctx.moveTo(f.x + .32, f.y + .92); ctx.lineTo(f.x + .32, f.y + .12); ctx.stroke();
+    ctx.fillStyle = col.accent; ctx.beginPath();
+    ctx.moveTo(f.x + .34, f.y + .12); ctx.quadraticCurveTo(f.x + .58, f.y + .2 + wave, f.x + .82, f.y + .3 + wave); ctx.lineTo(f.x + .34, f.y + .48); ctx.fill();
+  }
+  const b = C(s.base);
+  if (!s.hold && !pending && !won) {
+    ctx.fillStyle = col.mute; cells(L, s);   // grid is built once per state, then reused every frame
+    for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++)
+      if (isNode(L, s, x, y) && Math.hypot(x + .5 - b.x, y + .5 - b.y) <= REACH && !isBase(s, x, y)) {
+        ctx.beginPath(); ctx.arc(x + .5, y + .5, .07, 0, 7); ctx.fill();
+      }
+  }
+  animBlocks(dt);
+  for (const k of s.blocks) { const d = disp.get(k.id); piece(d.x + k.w / 2, d.y + k.h / 2, k.w, k.h, 0, k.oil); }
+  if (hover && !pending && !won) {
+    const ok = hover.res.kind, { x, y } = hover.cell;
+    ctx.strokeStyle = ok ? col.fg : col.mute; ctx.lineWidth = .05; ctx.setLineDash(ok ? [] : [.1, .1]);
+    if (ok === 'walk') { ctx.beginPath(); ctx.arc(x + .5, y + .5, .22, 0, 7); ctx.stroke(); }
+    else if (s.hold) {
+      ctx.strokeRect(x + .05, y + .05, s.hold.w - .1, s.hold.h - .1);
+      const end = ok === 'place' && hover.res.next.blocks.find(k => k.id === s.hold.id);
+      if (end && (end.x !== x || end.y !== y)) {   // it won't stay where you drop it: show where it ends up
+        ctx.setLineDash([.06, .1]); ctx.beginPath(); ctx.moveTo(x + end.w / 2, y + end.h / 2); ctx.lineTo(end.x + end.w / 2, end.y + end.h / 2); ctx.stroke();
+        ctx.globalAlpha = .4; piece(end.x + end.w / 2, end.y + end.h / 2, end.w, end.h, 0, end.oil); ctx.globalAlpha = 1;
+      }
+    }
+    else if (hover.res.err !== '') ctx.strokeRect(x + .08, y + .08, .84, .84);
+    ctx.setLineDash([]);
+  }
+  if (hintCell && !hintCell.twist) {
+    ctx.strokeStyle = col.accent; ctx.lineWidth = .07;
+    ctx.beginPath(); ctx.arc(hintCell.x + .5, hintCell.y + .5, .36 + Math.sin(t * 5) * .04, 0, 7); ctx.stroke();
+  }
+  drawArm(b, t, dt);
+  if (smash) {
+    smash.t += dt; ctx.globalAlpha = Math.max(0, .6 - smash.t); ctx.fillStyle = smash.oil ? col.oil : col.devil; ctx.fillRect(smash.x, smash.y, smash.w, smash.h); ctx.globalAlpha = 1;
+    if (smash.t > .6) smash = null;
+  }
+  for (const q of parts) {
+    q.t += dt; q.vy += 6 * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+    ctx.globalAlpha = Math.max(0, 1 - q.t / q.life); ctx.fillStyle = q.c; ctx.fillRect(q.x - q.sz / 2, q.y - q.sz / 2, q.sz, q.sz);
+  }
+  ctx.globalAlpha = 1; parts = parts.filter(q => q.t < q.life);
+}
+
+// The wall and slick-frame outlines, rebuilt only when a stone breaks. Cells stay square;
+// only the playfield's own corners (where two sides of the outer frame meet) get a small rounding.
+const ROUND = .2;
+let sceneryCache = {};
+function scenery(L, s) {
+  const key = s.broken.join();
+  if (sceneryCache.L === L && sceneryCache.key === key) return sceneryCache;
+  const mat = (x, y) => {   // what a cell is made of, for joining shapes (outside the board counts as solid)
+    if (x < 0 || y < 0 || x >= L.w || y >= L.h) return 'edge';
+    const i = y * L.w + x, c = L.grid[i];
+    if (c === '~') return 'slick';
+    if (c === '#') return 'wall';
+    if (breakable(c)) return s.broken.includes(i) ? null : c === 'X' ? 'wall' : 'crack';
+    return null;
+  };
+  const out = { L, key, mat, wall: new Path2D(), slick: new Path2D() };
+  const rim = (x, y) => x === 0 || y === 0 || x === L.w - 1 || y === L.h - 1;
+  const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
+    const m = mat(x, y);
+    if (m === 'wall' || m === 'slick') out[m].rect(x, y, 1, 1);
+    else if (!m) for (const [dx, dy] of corners) {   // an open cell in a corner of the frame gets a small fillet
+      const a = mat(x + dx, y);
+      if ((a !== 'wall' && a !== 'slick') || mat(x, y + dy) !== a || mat(x + dx, y + dy) !== a || !rim(x + dx, y) || !rim(x, y + dy)) continue;
+      const cx = x + (dx > 0), cy = y + (dy > 0), p = out[a];
+      p.moveTo(cx, cy); p.lineTo(cx - dx * ROUND, cy); p.quadraticCurveTo(cx, cy, cx, cy - dy * ROUND); p.closePath();
+    }
+  }
+  return (sceneryCache = out);
+}
+
+// Everything static (frame, walls, their shadows and edge light) is painted once into this layer and copied each frame.
+const layer = { canvas: document.createElement('canvas') };
+function sceneryLayer(L, s) {
+  const k = S * (window.devicePixelRatio || 1), key = [s.broken.join(), k, col.bg, col.wall, col.soft].join();
+  if (layer.L === L && layer.key === key) return layer.canvas;
+  Object.assign(layer, { L, key });
+  const c = layer.canvas, g = c.getContext('2d'), sc = scenery(L, s);
+  c.width = L.w * k; c.height = L.h * k;
+  g.setTransform(k, 0, 0, k, 0, 0);
+  // a faint vignette so the playfield has some depth
+  const v = g.createRadialGradient(L.w / 2, L.h / 2, Math.min(L.w, L.h) * .3, L.w / 2, L.h / 2, Math.hypot(L.w, L.h) / 2);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, col.lo);
+  g.fillStyle = v; g.fillRect(0, 0, L.w, L.h);
+  // frame and walls, casting a soft shadow downwards
+  g.shadowColor = col.shadow; g.shadowBlur = k * .35; g.shadowOffsetY = k * .12;
+  g.fillStyle = col.soft; g.fill(sc.slick);
+  g.fillStyle = col.wall; g.fill(sc.wall);
+  g.shadowColor = 'transparent';
+  g.save(); g.clip(sc.slick);   // one continuous hatch across the whole frame
+  g.strokeStyle = col.mute; g.lineWidth = .04; g.beginPath();
+  for (let i = 0; i <= (L.w + L.h) * 3; i++) { g.moveTo(i / 3 - L.h, L.h); g.lineTo(i / 3, 0); }
+  g.stroke(); g.restore();
+  // light catches the top edge of anything with open air above it
+  for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
+    const m = sc.mat(x, y);
+    if ((m === 'wall' || m === 'slick') && !sc.mat(x, y - 1)) { g.fillStyle = m === 'wall' ? col.wallhi : col.hi; g.fillRect(x, y, 1, .07); }
+  }
+  return c;
+}
+const shadow = (blur, dy, c = col.shadow) => { const k = S * (window.devicePixelRatio || 1); ctx.shadowColor = c; ctx.shadowBlur = blur * k; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = dy * k; };
+const noShadow = () => { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; };
+
+function piece(cx, cy, w, h, rot, oil, held) {
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
+  const x0 = -w / 2 + .07, y0 = -h / 2 + .07, iw = w - .14, ih = h - .14;
+  shadow(held ? .4 : .12, held ? .3 : .06);   // a held piece floats higher
+  ctx.fillStyle = oil ? col.oil : col.soft; ctx.fillRect(x0, y0, iw, ih); noShadow();
+  ctx.fillStyle = col.lo; ctx.fillRect(x0, y0 + ih * .65, iw, ih * .35);
+  ctx.fillStyle = col.hi; ctx.fillRect(x0, y0, iw, .08);
+  ctx.strokeStyle = col.fg; ctx.lineWidth = .06; ctx.strokeRect(x0, y0, iw, ih);
+  if (oil) {
+    ctx.fillStyle = col.fg; ctx.globalAlpha = .35;
+    for (const [dx, len] of [[-.2, .22], [.05, .34], [.25, .16]]) { ctx.beginPath(); ctx.ellipse(dx, -h / 2 + .07 + len / 2, .045, len / 2, 0, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  }
+  if (w !== h) {
+    ctx.lineWidth = .025; ctx.beginPath();
+    if (w > h) for (const o of [-.15, .15]) { ctx.moveTo(-w / 2 + .25, o); ctx.lineTo(w / 2 - .25, o); }
+    else for (const o of [-.15, .15]) { ctx.moveTo(o, -h / 2 + .25); ctx.lineTo(o, h / 2 - .25); }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// a Franka-Panda-style arm: white rounded links, dark joint rings, a parallel-jaw hand
+function capsule(a, b, wd) {
+  ctx.lineCap = 'round';
+  shadow(.3, .14);
+  ctx.strokeStyle = col.shelledge; ctx.lineWidth = wd + .05; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  noShadow();
+  ctx.strokeStyle = col.shell; ctx.lineWidth = wd; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+}
+function drawArm(b, t, dt) {
+  const [dx, dy] = gripDir(s), p = fk(b, ang), tip = p[3], a3 = ang[2];
+  ctx.save(); ctx.translate(b.x + dx * .3, b.y + dy * .3); ctx.rotate(Math.atan2(dy, dx) - Math.PI / 2);
+  ctx.fillStyle = col.shelledge; ctx.fillRect(-.4, -.08, .8, .32);
+  ctx.fillStyle = col.shell; ctx.fillRect(-.37, -.05, .74, .26);
+  ctx.fillStyle = col.ring; ctx.fillRect(-.37, .1, .74, .05);
+  ctx.restore();
+  capsule(b, p[1], .36); capsule(p[1], p[2], .3); capsule(p[2], { x: p[2].x + (tip.x - p[2].x) * .72, y: p[2].y + (tip.y - p[2].y) * .72 }, .24);
+  for (const [q, r] of [[p[0], .19], [p[1], .17], [p[2], .15]]) {
+    ctx.fillStyle = col.ring; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, 7); ctx.fill();
+    ctx.fillStyle = col.shell; ctx.beginPath(); ctx.arc(q.x, q.y, r * .55, 0, 7); ctx.fill();
+  }
+  wrist += (0 - wrist) * Math.min(1, dt * 9);
+  jaw += ((s.hold ? 0 : 1) - jaw) * Math.min(1, dt * 10);
+  const hand = { x: p[2].x + (tip.x - p[2].x) * .78, y: p[2].y + (tip.y - p[2].y) * .78 };
+  if (s.hold) piece(tip.x, tip.y, s.hold.w, s.hold.h, wrist, s.hold.oil, true);
+  ctx.save(); ctx.translate(hand.x, hand.y); ctx.rotate(a3 + wrist * .5);
+  ctx.fillStyle = col.ring; ctx.fillRect(-.06, -.12, .06, .24);
+  ctx.fillStyle = col.shelledge; ctx.fillRect(0, -.21, .17, .42);
+  ctx.fillStyle = col.shell; ctx.fillRect(.015, -.195, .14, .39);
+  const open = .07 + jaw * .1;
+  ctx.fillStyle = col.ring;
+  for (const sg of [1, -1]) ctx.fillRect(.17, sg * open - (sg > 0 ? 0 : .06), .2, .06);
+  const look = mouse ? Math.atan2(mouse.y - hand.y, mouse.x - hand.x) - (a3 + wrist * .5) : 0;
+  blink -= dt; if (blink < -0.12) blink = 2 + Math.random() * 3;
+  for (const sg of [1, -1]) {
+    const ex = .085, ey = sg * .085;
+    if (blink < 0) { ctx.strokeStyle = col.ring; ctx.lineWidth = .02; ctx.beginPath(); ctx.moveTo(ex - .035, ey); ctx.lineTo(ex + .035, ey); ctx.stroke(); continue; }
+    ctx.fillStyle = col.ring; ctx.beginPath(); ctx.arc(ex + Math.cos(look) * .015, ey + Math.sin(look) * .015, .03, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ---------- background: a faint, slowly drifting grid ----------
+const bg = $('bgfx'), bgx = bg.getContext('2d'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function sizeBg() {
+  const dpr = window.devicePixelRatio || 1;
+  bg.width = innerWidth * dpr; bg.height = innerHeight * dpr; bgx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function drawBg(t) {
+  const W = innerWidth, H = innerHeight, G = 40, off = still ? 0 : (t * 4) % G;
+  bgx.clearRect(0, 0, W, H);
+  bgx.strokeStyle = col.trace; bgx.lineWidth = 1; bgx.beginPath();
+  for (let x = -G + off; x < W; x += G) { bgx.moveTo(x, 0); bgx.lineTo(x, H); }
+  for (let y = 0; y < H; y += G) { bgx.moveTo(0, y); bgx.lineTo(W, y); }
+  bgx.stroke();
+}
+
+let mouseMoved = false;
+function frame(now) {
+  const t = now / 1000;
+  if (mouseMoved) { mouseMoved = false; track(); }
+  let m = 0;
+  for (let k = 0; k < 3; k++) { const d = wrap(goal[k] - ang[k]); ang[k] = wrap(ang[k] + d * .2); m = Math.max(m, Math.abs(d)); }
+  if (snd.whir) { const c = snd.ctx.currentTime; snd.whir.g.gain.setTargetAtTime(Math.min(.03, m * .04), c, .05); snd.whir.o.frequency.setTargetAtTime(80 + m * 140, c, .05); }
+  if (pending && m < .02) { if (pending.angles) ang = goal.slice(); finish(); }
+  draw(t); drawBg(t);
+  requestAnimationFrame(frame);
+}
+
+function toWorld(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * L.w, y: (e.clientY - r.top) / r.height * L.h };
+}
+cv.addEventListener('pointermove', e => { mouse = toWorld(e); mouseMoved = true; });   // tracked once per frame in frame()
+cv.addEventListener('pointerdown', e => {
+  initAudio(); mouse = toWorld(e);
+  if (e.button === 2) return twist();
+  track(); click();
+});
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('pointerleave', () => { hover = null; });
+$('undo').onclick = undo; $('reset').onclick = restart; $('hint').onclick = hint; $('twist').onclick = twist;
+$('open').onclick = openSelect; $('close').onclick = () => $('select').classList.remove('on');
+$('next').onclick = next;
+const helpbox = $('helpbox');
+$('help').onclick = () => helpbox.showModal();
+helpbox.addEventListener('click', e => { if (e.target === helpbox) helpbox.close(); });   // click outside the box closes it
+$('snd').onclick = () => { initAudio(); setSound(!snd.on); };
+for (const m of ['normal', 'devil']) $('m-' + m).onclick = () => playRandom(m);
+addEventListener('keydown', e => {
+  initAudio();
+  if (helpbox.open) return;   // the open help box keeps the keys (Esc closes it)
+  if (e.key === '?') return helpbox.showModal();
+  const k = e.key.toLowerCase();
+  if (k === 'z') undo(); else if (k === 'r') restart(); else if (k === 'h') hint(); else if (k === 't') twist();
+  else if (k === 'l') openSelect(); else if (k === 'm') setSound(!snd.on);
+  else if (k === 'enter' && won && !$('next').hidden) next();
+  else if (k === 'escape') $('select').classList.remove('on');
+});
+addEventListener('resize', resize);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+
+readColors();
+// open on the first built-in level, played as an endless one: it shows instantly, and the worker builds
+// the next level while you play, so "next" is ready when you win
+playDef({ ...LEVELS[0], random: 'normal' });
+prefetch();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
