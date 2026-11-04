@@ -66,6 +66,27 @@ dialog b{color:var(--fg);font-weight:400}
 .grid button{text-align:left;padding:10px}
 .grid small{display:block;color:var(--mute)}
 .grid .st{color:var(--star)}
+/* ---------- touch screens (phones, tablets): nothing below applies with a mouse ---------- */
+:root.touch body{min-height:100dvh;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root.touch main{padding:12px 8px}
+:root.touch #keys{display:none}
+:root.touch canvas#cv{-webkit-touch-callout:none}
+:root.touch header{flex-wrap:nowrap;font-size:14px;margin-bottom:8px;white-space:nowrap}
+:root.touch h1{font-size:15px}
+:root.touch #msg{margin-top:8px;font-size:15px;min-height:3em}   /* room for two lines, so the buttons don't jump */
+:root.touch button{min-height:44px;font-size:15px;padding:6px 4px;touch-action:manipulation}
+:root.touch footer{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:auto auto 44px;gap:8px}   /* the third row is kept free for turn / next */
+:root.touch footer .spacer{display:none}
+:root.touch #snd{justify-content:center}
+:root.touch #twist,:root.touch #next{grid-column:1/-1;order:9;border-color:var(--fg);font-weight:600}
+/* landscape: board on the left, sized to the screen's height, buttons in a column beside it */
+:root.touch main.side{padding-bottom:4px;grid-template-columns:var(--bw) minmax(0,1fr);column-gap:12px;justify-content:center}
+:root.touch main.side>header{grid-column:1;grid-row:1}
+:root.touch main.side #cv{grid-column:1;grid-row:2}
+:root.touch main.side #msg{grid-column:1;grid-row:3;min-height:1.5em;font-size:14px}
+:root.touch main.side>footer{grid-column:2;grid-row:1/span 3;align-self:center;margin:0;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto) 44px}
+:root.touch main.side #theory{grid-column:1/-1;grid-row:4;height:auto;max-width:none;margin-top:12px}
+:root.touch main.side #select{grid-column:1/-1;grid-row:1/span 3}
 </style>
 </head>
 <body>
@@ -113,6 +134,10 @@ dialog b{color:var(--fg);font-weight:400}
       <dd>Out-of-reach targets and already-seen states are skipped before the expensive arm check.</dd>
       <dt>Adversarial search</dt>
       <dd>The devil tries every move, re-solves the level for each, and picks the one that makes your best route longest. One step of minimax.</dd>
+      <dt>Procedural generation</dt>
+      <dd>Endless levels are generate and test: build a random layout, solve it, keep it only if the solution has the right length and its pieces matter. It runs in a Web Worker so the page stays responsive.</dd>
+      <dt>Cellular simulation</dt>
+      <dd>Pieces fall one cell at a time until something holds them. A piece resting on grease slides sideways instead.</dd>
     </dl>
   </details>
   <dialog id="helpbox" aria-labelledby="help-title">
@@ -596,6 +621,8 @@ function generate(mode, seed, budget = 20000) {
 
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
+const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;   // phones and tablets get their own layout and controls
+if (TOUCH) document.documentElement.classList.add('touch');
 let li = 0, def, L, s, ang, goal, pending, hist, moves, opt, par, mouse = null, hover = null, hintCell = null, hinted = false, won = false, col, S = 40;
 let doorAnim = {}, parts = [], blink = 0, lastT = 0, wrist = 0, jaw = 1, gemOpt = null, smash = null, thinking = false;
 const disp = new Map();   // where each block is drawn, so falls can be animated
@@ -694,16 +721,21 @@ function playDef(d) {
 function rule() {
   return L.hasDevil ? 'The devil moves after you.' : '';
 }
+let touchTip = TOUCH;   // a phone's first level explains the controls until the first move
 function intro() {
-  say(opt ? [`Par ${par}.`, rule(), gemOpt ? `All gems: ${gemOpt} moves.` : ''].filter(Boolean).join(' ') : 'No solution found.');
+  say(opt ? [`Par ${par}.`, rule(), gemOpt ? `All gems: ${gemOpt} moves.` : '', touchTip ? touchHelp() : ''].filter(Boolean).join(' ') : 'No solution found.');
 }
+const touchHelp = () => 'Drag to aim, let go to move.';
 
 const SIDE = 220, GAP = 28;   // narrowest side column worth showing, and the gap beside the board
 function resize() {
   const dpr = window.devicePixelRatio || 1, avail = document.documentElement.clientWidth - 32;
-  const besides = Math.min(1000, avail - 2 * (SIDE + GAP)), stacked = besides < 780;   // below ~780px the buttons wrap: stack instead
-  S = Math.max(12, Math.min(52, Math.floor((stacked ? Math.min(1000, avail) : besides) / L.w)));
-  document.querySelector('main').classList.toggle('stacked', stacked);
+  if (TOUCH) sizeTouch();
+  else {
+    const besides = Math.min(1000, avail - 2 * (SIDE + GAP)), stacked = besides < 780;   // below ~780px the buttons wrap: stack instead
+    S = Math.max(12, Math.min(52, Math.floor((stacked ? Math.min(1000, avail) : besides) / L.w)));
+    document.querySelector('main').classList.toggle('stacked', stacked);
+  }
   document.querySelector('main').style.setProperty('--bw', S * L.w + 'px');
   cv.style.width = S * L.w + 'px'; cv.style.height = S * L.h + 'px';
   cv.width = S * L.w * dpr; cv.height = S * L.h * dpr;
@@ -717,7 +749,16 @@ function hud() {
   $('gems').textContent = L.gems.length ? `· ◆ ${s.gems.length}/${L.gems.length}` : '';
   $('twist').hidden = !(s.hold && s.hold.w !== s.hold.h);
 }
-function say(t, html) { if (html) $('msg').innerHTML = t; else $('msg').textContent = t; }
+// Touch screens: upright, everything in one column; sideways, the board fills the height and the buttons sit beside it.
+function sizeTouch() {
+  const m = document.querySelector('main'), vw = document.documentElement.clientWidth, vh = innerHeight, side = vw > vh;
+  m.classList.toggle('stacked', !side); m.classList.toggle('side', side);
+  const above = m.querySelector('header').getBoundingClientRect().height + 8 + 24 + (side ? 31 : 0);   // padding, header, and sideways the message line
+  const fitW = side ? vw - 16 - 12 - 190 : vw - 16, fitH = side ? vh - above : Infinity;
+  S = Math.max(12, Math.min(52, Math.floor(Math.min(fitW / L.w, fitH / L.h))));
+}
+function say(t, html) {
+  if (TOUCH && !html) t = t.replace('Press T to turn it.', 'Tap turn plank.').replace('(T)', '(tap turn plank)'); if (html) $('msg').innerHTML = t; else $('msg').textContent = t; }
 
 function fk(b, a) {
   const p = [b];
@@ -731,9 +772,11 @@ function hoverCell() {
 }
 function track() {
   if (pending || !mouse || won) return;
-  const b = C(s.base), d = Math.hypot(mouse.x - b.x, mouse.y - b.y), k = d > REACH - .01 ? (REACH - .01) / d : 1;
-  const a = ik(L, s, b, { x: b.x + (mouse.x - b.x) * k, y: b.y + (mouse.y - b.y) * k }, ang);
+  const aim = aiming && snap(), m = aim ? aim.at : mouse;
+  const b = C(s.base), d = Math.hypot(m.x - b.x, m.y - b.y), k = d > REACH - .01 ? (REACH - .01) / d : 1;
+  const a = ik(L, s, b, { x: b.x + (m.x - b.x) * k, y: b.y + (m.y - b.y) * k }, ang);
   if (a) goal = a;
+  if (aim) { hover = aim.hover; return; }
   const cell = hoverCell();
   hover = { cell, res: act(L, s, cell, ang) };
 }
@@ -756,6 +799,7 @@ function puff(x, y, n, c, spread = .5, up = -1) {
 }
 
 function finish() {
+  touchTip = false;
   const p = pending; pending = null;
   const before = s; s = p.next;
   moves++;
@@ -1002,8 +1046,8 @@ function draw(t) {
   for (const k of s.blocks) { const d = disp.get(k.id); piece(d.x + k.w / 2, d.y + k.h / 2, k); }
   if (hover && !pending && !won) {
     const ok = hover.res.kind, { x, y } = hover.cell;
-    ctx.strokeStyle = ok ? col.fg : col.mute; ctx.lineWidth = .05; ctx.setLineDash(ok ? [] : [.1, .1]);
-    if (ok === 'walk') { ctx.beginPath(); ctx.arc(x + .5, y + .5, .22, 0, 7); ctx.stroke(); }
+    ctx.strokeStyle = ok ? col.fg : col.mute; ctx.lineWidth = aiming ? .09 : .05; ctx.setLineDash(ok ? [] : [.1, .1]);
+    if (ok === 'walk') { ctx.beginPath(); ctx.arc(x + .5, y + .5, aiming ? .34 : .22, 0, 7); ctx.stroke(); }
     else if (s.hold) {
       ctx.strokeRect(x + .05, y + .05, s.hold.w - .1, s.hold.h - .1);
       const end = ok === 'place' && hover.res.next.blocks.find(k => k.id === s.hold.id);
@@ -1190,22 +1234,56 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// Fingers are blunt and cover what they touch: aim at the nearest cell (within about a cell of the finger)
+// where something can be done, and point the arm at it so you can see the target around your finger.
+const SNAP = 1.1;
+function snap() {
+  const base = hoverCell(), w = s.hold ? s.hold.w : 1, h = s.hold ? s.hold.h : 1, near = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const cell = { x: base.x + dx, y: base.y + dy }, at = { x: cell.x + w / 2, y: cell.y + h / 2 };
+    near.push({ cell, at, d: Math.hypot(at.x - mouse.x, at.y - mouse.y) });
+  }
+  near.sort((p, q) => p.d - q.d);
+  for (const n of near) {
+    if (n.d > SNAP) break;
+    const res = act(L, s, n.cell, ang);
+    if (res.kind) return { at: n.at, hover: { cell: n.cell, res } };
+  }
+  return { at: mouse, hover: { cell: base, res: act(L, s, base, ang) } };
+}
 function toWorld(e) {
   const r = cv.getBoundingClientRect();
   return { x: (e.clientX - r.left) / r.width * L.w, y: (e.clientY - r.top) / r.height * L.h };
 }
 cv.addEventListener('pointermove', e => { mouse = toWorld(e); mouseMoved = true; });   // tracked once per frame in frame()
+// A mouse moves on click. A finger aims while it's down and moves when it lets go; sliding off the board cancels.
+let aiming = false;
 cv.addEventListener('pointerdown', e => {
   initAudio(); mouse = toWorld(e);
+  if (e.pointerType !== 'mouse') { aiming = true; cv.setPointerCapture(e.pointerId); track(); return; }
   if (e.button === 2) return twist();
   track(); click();
 });
+cv.addEventListener('pointerup', e => {
+  if (!aiming) return;
+  aiming = false; mouse = toWorld(e);
+  const r = cv.getBoundingClientRect(), pad = 24;
+  if (e.clientX > r.left - pad && e.clientX < r.right + pad && e.clientY > r.top - pad && e.clientY < r.bottom + pad) { aiming = true; track(); aiming = false; click(); }
+  mouse = null; hover = null;
+});
+cv.addEventListener('pointercancel', () => { aiming = false; mouse = null; hover = null; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('pointerleave', () => { hover = null; });
 $('undo').onclick = undo; $('reset').onclick = restart; $('hint').onclick = hint; $('twist').onclick = twist;
 $('open').onclick = openSelect; $('close').onclick = () => $('select').classList.remove('on');
 $('next').onclick = next;
 const helpbox = $('helpbox');
+if (TOUCH) {
+  const [grip, carry] = helpbox.querySelectorAll('li');
+  grip.textContent = 'Tap a dot to grip it, or hold and drag to aim and let go. The arm swings over and its old base becomes the new hand.';
+  carry.textContent = 'Tap a block to pick it up, then tap empty space to drop it. Tap turn plank to turn a plank.';
+  $('twist').textContent = 'turn plank'; $('next').textContent = 'next level';
+}
 $('help').onclick = () => helpbox.showModal();
 helpbox.addEventListener('click', e => { if (e.target === helpbox) helpbox.close(); });   // click outside the box closes it
 $('snd').onclick = () => { initAudio(); setSound(!snd.on); };
