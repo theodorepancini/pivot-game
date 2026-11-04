@@ -113,10 +113,6 @@ dialog b{color:var(--fg);font-weight:400}
       <dd>Out-of-reach targets and already-seen states are skipped before the expensive arm check.</dd>
       <dt>Adversarial search</dt>
       <dd>The devil tries every move, re-solves the level for each, and picks the one that makes your best route longest. One step of minimax.</dd>
-      <dt>Procedural generation</dt>
-      <dd>Endless levels are generate and test: build a random layout, solve it, keep it only if the solution has the right length and its pieces matter. It runs in a Web Worker so the page stays responsive.</dd>
-      <dt>Cellular simulation</dt>
-      <dd>Pieces fall one cell at a time until something holds them. A piece resting on grease slides sideways instead.</dd>
     </dl>
   </details>
   <dialog id="helpbox" aria-labelledby="help-title">
